@@ -20,6 +20,14 @@
                 android:name="com.google.android.gms.maps.MapFragment"
                 android:layout_weight="2" />
 
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Launch Inspection Mode"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="7dp"
+            android:id="@+id/InspectionMode"/>
+
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="wrap_content"

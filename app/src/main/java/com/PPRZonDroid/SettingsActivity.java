@@ -54,6 +54,8 @@ public class SettingsActivity extends Activity {
 @SuppressLint("ValidFragment")
 class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
+  public static final String HIDE_UI = "hide_ui";
+  public static final String HIDE_PFD = "hide_pfd";
   public static final String USE_GPS = "use_gps_checkbox";
   public static final String SERVER_IP_ADDRESS = "server_ip_adress_text";
   public static final String SERVER_PORT_ADDRESS = "server_port_number_text";

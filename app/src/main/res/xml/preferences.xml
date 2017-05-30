@@ -10,6 +10,18 @@
         android:key="pref_key_general_settings">
 
     <CheckBoxPreference
+        android:key="hide_ui"
+        android:title="Hide UI information"
+        android:summary="Hides navigational information about the drone"
+        android:defaultValue="false" />
+
+        <CheckBoxPreference
+            android:key="hide_pfd"
+            android:title="Hide PFD"
+            android:summary="Hides the primary flight display on the screen"
+            android:defaultValue="false" />
+
+    <CheckBoxPreference
         android:key="use_gps_checkbox"
         android:title="@string/pref_use_device_gps_title"
         android:summary="@string/pref_use_device_gps_title_description"

@@ -13,6 +13,7 @@
         android:layout_marginTop="0dp"
         android:adjustViewBounds="true" />
 
+    <!--
     <ImageButton
         android:layout_width="60dp"
         android:layout_height="40dp"
@@ -46,9 +47,10 @@
         android:layout_alignBottom="@+id/imageLaunch"
         android:src="@drawable/set_alt"
         android:onClick="show_alt_dialog"
-        android:layout_alignRight="@+id/imageView_Pfd" />
+        android:layout_alignRight="@+id/imageView_Pfd" /> -->
 
     <!-- title -->
+    <!--
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -78,9 +80,10 @@
         android:layout_alignBottom="@+id/header"
         android:layout_alignParentRight="true"
         android:layout_marginRight="5dp" />
-
+    -->
     <!--  divider -->
 
+    <!--
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -88,5 +91,5 @@
         android:background="#DADADC"
         android:layout_alignParentStart="false"
         android:layout_below="@+id/header"></View>
-
+    -->
 </RelativeLayout>

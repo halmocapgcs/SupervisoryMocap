@@ -32,11 +32,15 @@
  *     --timer has been shortened from 3000 ms to 900 ms
  *     --lines connecting waypoints
  *     --icon now displays altitude rather than title
+ *     --PFD can be turned off
+ *     --landed, flare, and HOME blocks are not loaded into the block list adaptor
  *
  *     The block ID and waypoint ID relevant to the looping through the added waypoints uses BlocId
- *     7 and waypoint 7. These have been hard coded into the activity and are flight plan specific
+ *     6 and waypoint 7. These have been hard coded into the activity and are flight plan specific
  *     to the ARdrone2 vicon_rotorcraft as of 5/24/17. If that flight plan is modified, the relevant
- *     ID numbers MUST be recalculated. The same is true for the selected visible waypoints.
+ *     ID numbers MUST be recalculated. The same is true for the selected visible waypoints. This
+ *     all takes place in the set_selected_block method, hopefully a more elegant fix can be
+ *     developed at some point
  */
 
 package com.PPRZonDroid;
@@ -103,6 +107,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import static com.PPRZonDroid.SettingsFragment.HIDE_UI;
 import static java.lang.Double.parseDouble;
 
 
@@ -120,6 +125,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public static final String Control_Pass = "app_password";
   public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
   public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
+  public static final String HIDE_PFD = "hide_pfd";
 
   public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   boolean AcLocked = false;
@@ -153,6 +159,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   ArrayList<Model> AcList = new ArrayList<Model>();
   AcListAdapter mAcListAdapter;
   ListView AcListView;
+  boolean hidePFD;
   boolean TcpSettingsChanged;
   boolean UdpSettingsChanged;
   int DialogAcId;
@@ -163,7 +170,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   private TextView MapThrottle;
   private ImageView Pfd;
 
-  private Button Button_ConnectToServer;
+  private Button Button_ConnectToServer, Button_LaunchInspectionMode;
   private ToggleButton ChangeVisibleAcButon;
   private DrawerLayout mDrawerLayout;
   //Dialog components
@@ -249,6 +256,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     AppPassword = (AppSettings.getString("app_password", ""));
 
     DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
+    hidePFD = AppSettings.getBoolean(HIDE_PFD, false);
 
     /* Setup waypoint dialog */
     WpDialog = new Dialog(this);
@@ -380,6 +388,16 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     Button_ConnectToServer = (Button) findViewById(R.id.Button_ConnectToServer);
     setup_map_ifneeded();
 
+    Button_LaunchInspectionMode = (Button) findViewById(R.id.InspectionMode);
+//    Button_LaunchInspectionMode.setTextColor(Color.WHITE);
+//    Button_LaunchInspectionMode.setBackgroundColor(Color.BLACK);
+    Button_LaunchInspectionMode.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            Intent inspect = new Intent(MainActivity.this, InspectionMode.class);
+            startActivity(inspect);
+        }
+    });
 
     ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
     ChangeVisibleAcButon.setSelected(false);
@@ -404,8 +422,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
       //
       BlListView = (ListView) findViewById(R.id.BlocksList);
-      View FlightControls = getLayoutInflater().inflate(R.layout.flight_controls, null);
-      BlListView.addHeaderView(FlightControls);
+
+      if(!hidePFD) {
+          View FlightControls = getLayoutInflater().inflate(R.layout.flight_controls, null);
+          BlListView.addHeaderView(FlightControls);
+      }
+
       BlListView.setAdapter(mBlListAdapter);
       BlListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
           public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -504,7 +526,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         mBlListAdapter.SelectedInd = BlocId + 1;
         mBlListAdapter.notifyDataSetChanged();
 
-        if(BlocId == 8){
+        //this checks to see if the server is at the arrived block, in which case we shift back
+        //to the next waypoint block which is handled locally rather than with the reqfromserver tag
+        if(BlocId == 7){
 
             Marker popped = mMarkerHead.removeFirst();
             popped.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
@@ -533,12 +557,17 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 }
             };
 
-            //continues the loop
-            set_selected_block(7, false);
+            //continues the loop by updating next waypoint
+            set_selected_block(6, false);
         }
     }
-    //added feature here to loop through the Next Waypoint! block, which is block number 7
-    else if(BlocId == 7 && mMarkerHead.peek() != null){
+    //if start is pressed, we need to handle this special case to move to the next block but with
+    //the reqfromserver variable set false in order to trigger the local code that adjusts the wps
+    else if(BlocId == 5){
+        set_selected_block(6, false);
+    }
+    //added feature here to loop through the Next Waypoint! block, which is block number 6
+    else if(BlocId == 6 && mMarkerHead.peek() != null){
         Marker newNEXT = mMarkerHead.peek();
         LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
         String altitude = newNEXT.getSnippet();
@@ -554,7 +583,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
             @Override
             public void onFinish() {
-                send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 7, true);
+                send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 6, true);
             }
         }.start();
     }
@@ -622,7 +651,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     int i;
     BlList.clear();
 
-    for (i = 0; i < AC_DATA.AircraftData[AC_DATA.SelAcInd].BlockCount; i++) {
+    //the -3 added in this for loop makes it so that the nonessential landed, flare, and HOME
+    //blocks do not appear for our app
+    for (i = 0; i < AC_DATA.AircraftData[AC_DATA.SelAcInd].BlockCount-3; i++) {
       BlList.add(new BlockModel(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Blocks[i].BlName));
     }
     mBlListAdapter.BlColor = AC_DATA.muiGraphics.get_color(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Color);
@@ -690,7 +721,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       mMap.getUiSettings().setZoomGesturesEnabled(false);
 
       //Create the ground overlay
-      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.realroomtemp);
+      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.roomwithhoop);
       GroundOverlay trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
               .position(labOrigin, (float) 77.15)
@@ -1245,6 +1276,11 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public void onSharedPreferenceChanged(SharedPreferences AppSettings, String key) {
 
     //Changed settings will be applied on nex iteration of async task
+
+    if(key.equals(HIDE_PFD)) {
+        hidePFD = AppSettings.getBoolean(HIDE_PFD, false);
+    }
+
 
     if (key.equals(SERVER_IP_ADDRESS)) {
       AC_DATA.ServerIp = AppSettings.getString(SERVER_IP_ADDRESS, getString(R.string.pref_ip_address_default));

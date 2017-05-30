@@ -4,7 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.3'
+        classpath 'com.android.tools.build:gradle:2.3.2'
     }
 }
 apply plugin: 'android'
@@ -14,8 +14,8 @@ repositories {
 }
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion '21.1.2'
+    compileSdkVersion 25
+    buildToolsVersion '25.0.0'
 
     defaultConfig {
         minSdkVersion 13
@@ -23,7 +23,7 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file ('key/debug.keystore')
+            storeFile file('key/debug.keystore')
         }
 
     }
@@ -36,4 +36,5 @@ dependencies {
     compile 'com.android.support:support-v4:19.0.0'
     compile 'com.android.support:gridlayout-v7:19.0.0'
     compile 'com.android.support:support-v13:19.0.0'
+    compile 'com.android.support.constraint:constraint-layout:+'
 }
