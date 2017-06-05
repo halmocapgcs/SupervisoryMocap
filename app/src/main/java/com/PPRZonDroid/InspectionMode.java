@@ -1,27 +1,303 @@
+
+/*
+	Inspection mode here has been created to allow for a video stream and nudge controls when the
+	drone is close to an object and needs to get a better view
+
+	Currently, launching inspection mode restarts the telemetry processes since a broadcast reciever
+	or more complex intent has not been implemented. As soon as the buttons are pressed for the first
+	time, the app will begin to send RC_4CH commands through mode 1 -- auto1 which has been set to
+	AC_MODE_ATTITUDE_RC_CLIMB
+		(NOTE: this is not the same mode that paparazzi documentation discusses. We made a slight
+		modification such that this mode now also has hover horizontal guidance rather than direct
+		horizontal control so that the drone will stay in place and respond to all types of directional
+		commands)
+
+	Pressing the return button drops a pin at the current location, waits a little bit to let that
+	command register, and then switches mode to auto 2. A timer must then wait a little before ending the
+	RC_4CH commands so that the drone does not trigger safe mode and touch down.
+
+	There are some areas here that need to be fixed. The button UI is not very obvious, the timers
+	used in the return button cause a large delay after pressing it, there is some lag in the buttons,
+	there is a drop in altitude when switching from main to inspection, the pause pin drop is imperfect,
+	and the TCP implementation is sloppy and potentially causing some of the lag. Some of these issues,
+	such as the button lag, likely cannot be fixed and are problems from paparazzi.
+
+	--6/1/17
+
+
+ */
+
 package com.PPRZonDroid;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
+import android.view.Display;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 
 
 public class InspectionMode extends ActionBarActivity {
+
+	private ReadTelemetry TelemetryAsyncTask;
+	boolean isTaskRunning;
+	private Thread mTCPthread;
+
+	RelativeLayout thumbPad_left, thumbPad_right;
+	ThumbPad leftPad, rightPad;
+	public Telemetry AC_DATA;
+
+	boolean DEBUG=false;
+	boolean TcpSettingsChanged;
+	boolean UdpSettingsChanged;
+	String AppPassword;
+
+	public int AcId, yaw, pitch, roll = 0;
+	public int throttle = 63;
+	public int mode = 2;
+	int JoyMessageLimiter = 0;
+
+	int RIGHT = 1;
+	int UP = 2;
+	int LEFT = 3;
+	int DOWN = 4;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_inspection_mode);
 
+		setup_app();
+		setup_telemetry_class();
+
+		TelemetryAsyncTask = new ReadTelemetry();
+		TelemetryAsyncTask.execute();
+
+		//send paparazzi method to indicate switching to hover mode
+
+	}
+
+
+	private void setup_telemetry_class() {
+
+		//Create com.hal.manualmocap.Telemetry class
+		AC_DATA = new Telemetry();
+
+		//sub in values
+		AC_DATA.ServerIp = "192.168.50.10";
+		AC_DATA.ServerTcpPort = 5010;
+		AC_DATA.UdpListenPort = 5005;
+
+		//must prepare class in order to parse udp strings into the aircraft object
+		AC_DATA.prepare_class();
+		AC_DATA.unopened = false;
+		AC_DATA.setup_udp();
+	}
+
+	public void setup_app(){
+		AppPassword = "1234";
+
+		thumbPad_left = (RelativeLayout)findViewById(R.id.joystick_left);
+		thumbPad_right = (RelativeLayout)findViewById(R.id.joystick_right);
+
+		leftPad = new ThumbPad(thumbPad_left);
+		rightPad = new ThumbPad(thumbPad_right);
+
+		thumbPad_left.setOnTouchListener(new View.OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				AC_DATA.inspecting = true;
+				if(event.getAction() == MotionEvent.ACTION_DOWN){
+					mode = 1;
+					if(leftPad.getRegion(event) == RIGHT){
+						yaw = 15;
+					}
+					else if(leftPad.getRegion(event) == LEFT){
+						yaw = -15;
+					}
+					else if(leftPad.getRegion(event) == UP){
+						throttle = 84;
+					}
+					else if(leftPad.getRegion(event) == DOWN){
+						throttle = 42;
+					}
+				}
+				else if(event.getAction()== MotionEvent.ACTION_UP) {
+					yaw = 0;
+					throttle = 63;
+					float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude) + .300088f;
+					AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
+							AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
+				}
+					return true;
+			}
+		});
+
+		thumbPad_right.setOnTouchListener(new View.OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				AC_DATA.inspecting = true;
+				if(event.getAction() == MotionEvent.ACTION_DOWN){
+					mode = 1;
+					if(rightPad.getRegion(event) == RIGHT){
+						roll = 15;
+					}
+					else if(rightPad.getRegion(event) == LEFT){
+						roll = -15;
+					}
+					else if(rightPad.getRegion(event) == UP){
+						pitch = -15;
+					}
+					else if(rightPad.getRegion(event) == DOWN){
+						pitch = 15;
+					}
+				}
+				else if(event.getAction()== MotionEvent.ACTION_UP){
+					pitch = 0;
+					roll = 0;
+					//don't forget offset to accomodate for imperfect ground level of lab
+					float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude) + .300088f;
+					AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
+							AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
+				}
+				return true;
+			}
+		});
+
 		Button returnButton = (Button) findViewById(R.id.Return);
 		returnButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				finish();
+				//yes this nested timer is not pretty but you need a) time for the pause block to go
+				//through so the drone doesn't revert to its original location and then b) time for
+				//the joystick mode to adjust back to auto2 or the drone triggers safe landing
+				AC_DATA.empty = false;
+				new CountDownTimer(1000, 100) {
+					@Override
+					public void onTick(long l) {}
+
+					@Override
+					public void onFinish() {
+						mode = 2;
+						new CountDownTimer(1000, 1000){
+							@Override
+							public void onTick(long l) {}
+
+							@Override
+							public void onFinish() {
+								AC_DATA.inspecting = false;
+								AC_DATA.mTcpClient.sendMessage("removeme");
+								//TelemetryAsyncTask.isCancelled();
+								AC_DATA.mTcpClient.stopClient();
+								isTaskRunning= false;
+								finish();
+							}
+						}.start();
+					}
+				}.start();
+
 			}
 		});
 	}
 
+	class ReadTelemetry extends AsyncTask<String, String, String> {
 
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			isTaskRunning = true;
+			if (DEBUG) Log.d("PPRZ_info", "ReadTelemetry() function started.");
+		}
+
+		@Override
+		protected String doInBackground(String... strings) {
+			mTCPthread =  new Thread(new ClientThread());
+			mTCPthread.start();
+
+			while (isTaskRunning) {
+
+				if(AC_DATA.inspecting && (JoyMessageLimiter >= 8)) {
+					AC_DATA.mTcpClient.sendMessage("joyinfo" + " " + mode + " " + throttle + " "
+							+ roll + " " + pitch + " " + yaw);
+					JoyMessageLimiter = 0;
+				}
+				else{
+					JoyMessageLimiter++;
+				}
+
+				//Check if settings changed
+				if (TcpSettingsChanged) {
+					AC_DATA.mTcpClient.stopClient();
+					try {
+						Thread.sleep(200);
+						//AC_DATA.mTcpClient.SERVERIP= AC_DATA.ServerIp;
+						//AC_DATA.mTcpClient.SERVERPORT= AC_DATA.ServerTcpPort;
+						mTCPthread =  new Thread(new ClientThread());
+						mTCPthread.start();
+						TcpSettingsChanged=false;
+						if (DEBUG) Log.d("PPRZ_info", "TcpSettingsChanged applied");
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (UdpSettingsChanged) {
+					AC_DATA.setup_udp();
+					//AC_DATA.tcp_connection();
+					UdpSettingsChanged = false;
+					if (DEBUG) Log.d("PPRZ_info", "UdpSettingsChanged applied");
+				}
+
+				// Log.e("PPRZ_info", "3");
+				//1 check if any string waiting to be send to tcp
+				if (!(null == AC_DATA.SendToTcp)) {
+					AC_DATA.mTcpClient.sendMessage(AC_DATA.SendToTcp);
+					AC_DATA.SendToTcp = null;
+					AC_DATA.empty = true;
+				}
+
+				//3 try to read & parse udp data
+				AC_DATA.read_udp_data(MainActivity.sSocket);
+
+				//4 check ui changes
+				if (AC_DATA.ViewChanged) {
+					publishProgress("ee");
+					AC_DATA.ViewChanged = false;
+				}
+			}
+			if (DEBUG) Log.d("PPRZ_info", "Stopping AsyncTask ..");
+			return null;
+		}
+	}
+
+	class ClientThread implements Runnable {
+
+
+		@Override
+		public void run() {
+
+			AC_DATA.mTcpClient = new TCPClient(new TCPClient.OnMessageReceived() {
+				@Override
+				//here the messageReceived method is implemented
+				public void messageReceived(String message) {
+					//this method calls the onProgressUpdate
+					//publishProgress(message);
+					//Log.d("TCPParse", "Begin TCP parse");
+					AC_DATA.parse_tcp_string(message);
+
+				}
+			});
+			AC_DATA.mTcpClient.SERVERIP = AC_DATA.ServerIp;
+			AC_DATA.mTcpClient.SERVERPORT= AC_DATA.ServerTcpPort;
+			AC_DATA.mTcpClient.run();
+
+		}
+
+	}
 }

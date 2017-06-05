@@ -7,25 +7,27 @@
     android:layout_height="match_parent"
     tools:context="com.PPRZonDroid.InspectionMode">
 
-    <ImageView
+    <RelativeLayout
         android:id="@+id/joystick_left"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="40dp"
         android:layout_marginLeft="40dp"
-        android:src="@drawable/joystick_halo" />
+        android:background="@drawable/joystick_halo" >
+    </RelativeLayout>
 
-    <ImageView
+    <RelativeLayout
         android:id="@+id/joystick_right"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="40dp"
         android:layout_marginRight="40dp"
-        android:src="@drawable/joystick_halo" />
+        android:background="@drawable/joystick_halo" >
+    </RelativeLayout>
 
     <Button
         android:layout_width="wrap_content"

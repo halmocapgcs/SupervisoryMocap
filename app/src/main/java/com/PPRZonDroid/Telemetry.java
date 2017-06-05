@@ -30,6 +30,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -39,6 +40,12 @@ import java.util.concurrent.TimeUnit;
 public class Telemetry {
 
   boolean DEBUG;
+
+  //added by Ben Welton
+  boolean inspecting = false;
+  boolean empty = true;
+  boolean unopened = true;
+
   public String SendToTcp = null;
   public int SelAcInd = -1;  //
 
@@ -75,7 +82,7 @@ public class Telemetry {
   private DatagramPacket packet;
   private String String2parse;
   private String String2parse_buf = "";
-  private DatagramSocket socket = null;
+
 
 
 
@@ -106,35 +113,35 @@ public class Telemetry {
    * Setup udp listen port
    */
   public void setup_udp() {
-    try {
-      socket = new DatagramSocket(UdpListenPort);
-      socket.setSoTimeout(150); //This is needed to prevent udp read lock
-    } catch (SocketException e) {
-      e.printStackTrace();
-      if (DEBUG) Log.d("PPRZ_exception", "Udp SocketException");
+    if(unopened) {
+      try {
+        MainActivity.sSocket = new DatagramSocket(UdpListenPort);
+        MainActivity.sSocket.setSoTimeout(150); //This is needed to prevent udp read lock
+        unopened = false;
+      } catch (SocketException e) {
+        e.printStackTrace();
+        if (DEBUG) Log.d("PPRZ_exception", "Udp SocketException");
+      }
     }
     byte[] buf = new byte[1024];
     packet = new DatagramPacket(buf, buf.length);
 
   }
 
-  public void read_udp_data() {
+  public void read_udp_data(DatagramSocket socket) {
 
         try {
 
             socket.receive(packet);
-
             String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength());
             //!!TODO line below is for compatibility. Will be
             //String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength()-1);
-
             if ((String2parse != null) && (!String2parse.equals(String2parse_buf))) {
                 String2parse_buf = String2parse;
                 //if (DEBUG) Log.d("PPRZ_exception", "Udp Package Received:" + String2parse);
                 parse_udp_string(String2parse);
                 String2parse=null;
             }
-
 
         } catch (Exception e) {
             //ignore java.net.SocketTimeoutException
@@ -260,7 +267,6 @@ public class Telemetry {
 
     //Parse FLIGHT_PARAM messages
     if (LastTelemetryString.matches("(^ground FLIGHT_PARAM .*)")) {
-
       String[] ParsedData = LastTelemetryString.split(" ");
       int AcIndex = get_indexof_ac(Integer.parseInt(ParsedData[2]));
       if (AcIndex >= 0) {
@@ -273,6 +279,8 @@ public class Telemetry {
         AircraftData[AcIndex].Position = new LatLng(Double.parseDouble(ParsedData[6]), Double.parseDouble(ParsedData[7]));
         AircraftData[AcIndex].Speed = ParsedData[8].substring(0, (ParsedData[8].indexOf(".") + 2));
         AircraftData[AcIndex].Altitude = ParsedData[10].substring(0, ParsedData[10].indexOf("."));
+        AircraftData[AcIndex].RawAltitude = ParsedData[10];
+        Log.d("inspection", AircraftData[AcIndex].RawAltitude);
         AircraftData[AcIndex].AGL = ParsedData[12].substring(0, ParsedData[12].indexOf("."));
 
         if (!AircraftData[AcIndex].Altitude.equals(AircraftData[AcIndex].AGL)) {
@@ -684,6 +692,7 @@ public class Telemetry {
     Polyline Ac_PolLine;
       PolylineOptions Ac_PolLine_Options;
     String Altitude;
+    String RawAltitude;
     boolean Altitude_Changed = false;
     String AGL;
     LatLng Position;

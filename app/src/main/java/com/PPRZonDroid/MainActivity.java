@@ -26,21 +26,29 @@
  * NOTE: The additions made for HAL's supervisory variant are as follow
  *     --ability to add waypoints
  *     --mapping of latitudes onto a ground overlay of the room
- *     --showing only certain waypoints
+ *     --showing only certain waypoints, namely the ORIGIN
  *     --creating a looping feature for the Next Waypoint! block to execute flight plan
  *     --custom dialogs for wp removal and altitude adjustment
  *     --timer has been shortened from 3000 ms to 900 ms
- *     --lines connecting waypoints
+ *     --lines connecting waypoints, are removed once subsequent wp is reached
+ *     --reached wps turn grey
  *     --icon now displays altitude rather than title
- *     --PFD can be turned off
+ *     --PFD can be turned off, but app must be exited and restarted for change to take place
  *     --landed, flare, and HOME blocks are not loaded into the block list adaptor
+ *     --special case added so that START block triggers loop
+ *     --special case added so that PAUSE block does not trigger timer
+ *     --button added to launch inspection mode
+ *     --STATIC snippet added to important wps so that they cannot be removed
+ *          --current implementation of this does require that all markers are initialized w/ snippets
  *
  *     The block ID and waypoint ID relevant to the looping through the added waypoints uses BlocId
  *     6 and waypoint 7. These have been hard coded into the activity and are flight plan specific
- *     to the ARdrone2 vicon_rotorcraft as of 5/24/17. If that flight plan is modified, the relevant
+ *     to the ARdrone2 vicon_rotorcraft as of 6/1/17. If that flight plan is modified, the relevant
  *     ID numbers MUST be recalculated. The same is true for the selected visible waypoints. This
  *     all takes place in the set_selected_block method, hopefully a more elegant fix can be
- *     developed at some point
+ *     developed at some point. Note that there is also a hard-coded component for the special case
+ *     PAUSE timer prevention which is activated in the setup_block_list method. Inspection mode
+ *     would also need to be adjusted
  */
 
 package com.PPRZonDroid;
@@ -104,6 +112,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.IOException;
+import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -126,6 +135,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
   public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
   public static final String HIDE_PFD = "hide_pfd";
+
+  public static final int SERVER_STRING = 1;
 
   public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   boolean AcLocked = false;
@@ -176,7 +187,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   //Dialog components
   private Dialog WpDialog;
   private Dialog AltDialog;
-  private Dialog RemoveDialog;
   //Position descriptions >> in future this needs to be an array or struct
   private LatLng AC_Pos = new LatLng(43.563958, 1.481391);
   private String SendStringBuf;
@@ -191,6 +201,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public Polyline path;
   public Polyline pastPath;
   public boolean firstRun = true;
+
+  static DatagramSocket sSocket = null;
+
+  final float GROUND_OFFSET = .300088f;
   //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   //Background task to read and write telemery msgs
   private boolean isTaskRunning;
@@ -389,13 +403,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     setup_map_ifneeded();
 
     Button_LaunchInspectionMode = (Button) findViewById(R.id.InspectionMode);
-//    Button_LaunchInspectionMode.setTextColor(Color.WHITE);
-//    Button_LaunchInspectionMode.setBackgroundColor(Color.BLACK);
     Button_LaunchInspectionMode.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View view) {
+            send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 9, true);
             Intent inspect = new Intent(MainActivity.this, InspectionMode.class);
-            startActivity(inspect);
+            startActivityForResult(inspect, SERVER_STRING);
         }
     });
 
@@ -437,7 +450,13 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
               mBlListAdapter.ClickedInd = position-1;
               JumpToBlock= position-1;
 
-              BL_CountDown.start();
+              //this if statement is used to prevent the timer from activating for the pause block
+              if(JumpToBlock == 9){
+                  mBlListAdapter.ClickedInd = -1;
+                  set_selected_block(JumpToBlock, false);
+              }
+              else BL_CountDown.start();
+
               mBlListAdapter.notifyDataSetChanged();
 
 
@@ -535,7 +554,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                     "grey", popped.getTitle(), AC_DATA.GraphicsScaleFactor)));
 
             /* current implementation simply removes the connecting polyline from previous wp
-             * and then adds gray polyline to indicate that a wp has been reached */
+             *  to indicate that a wp has been reached */
 
             pathPoints.removeFirst();
             adjust_marker_lines();
@@ -554,11 +573,13 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 }
                 @Override
                 public void onFinish() {
+                    //continues the loop by updating next waypoint
+                    set_selected_block(6, false);
                 }
-            };
+            }.start();
 
-            //continues the loop by updating next waypoint
-            set_selected_block(6, false);
+
+
         }
     }
     //if start is pressed, we need to handle this special case to move to the next block but with
@@ -570,10 +591,11 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     else if(BlocId == 6 && mMarkerHead.peek() != null){
         Marker newNEXT = mMarkerHead.peek();
         LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
-        String altitude = newNEXT.getSnippet();
+        float altitude = Float.parseFloat(newNEXT.getSnippet());
+        float adjustedAltitude = altitude - GROUND_OFFSET;
         //Note below that 31 is the AC id for our ardrone and 7 is the waypoint number for NEXT
         SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + 31 + " " + 7 +
-                " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + altitude;
+                " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + adjustedAltitude;
         send_to_server(SendStringBuf, true);
 
         //timer is needed to ensure paparazzi system corrects waypoint first
@@ -800,24 +822,26 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //listener to add in remove on click functionality and altitude control
     mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
         public boolean onMarkerClick(final Marker marker){
-            AlertDialog adjustDialog = new AlertDialog.Builder(MainActivity.this)
-                    .setTitle("Adjust Waypoint")
-                    .setMessage("Click below to adjust the altitude or remove the waypoint")
-                    .setNegativeButton("Cancel", null)
-                    .setNeutralButton("Altitude", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i){
-                            launch_altitude_dialog(marker, "OLD");
-                        }
-                    })
-                    .setPositiveButton("Remove", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i){
-                            remove_waypoint_dialog(marker);
-                        }
-                    })
-                    .create();
-            adjustDialog.show();
+            if(!marker.getSnippet().equals("STATIC")) {
+                AlertDialog adjustDialog = new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Adjust Waypoint")
+                        .setMessage("Click below to adjust the altitude or remove the waypoint")
+                        .setNegativeButton("Cancel", null)
+                        .setNeutralButton("Altitude", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                launch_altitude_dialog(marker, "OLD");
+                            }
+                        })
+                        .setPositiveButton("Remove", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                remove_waypoint_dialog(marker);
+                            }
+                        })
+                        .create();
+                adjustDialog.show();
+            }
             return true;
         }
     });
@@ -957,6 +981,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                       .flat(true).rotation(Float.parseFloat(AC_DATA.AircraftData[AcIndex].Heading))
                       .title(AC_DATA.AircraftData[AcIndex].AC_Name)
                       .draggable(false)
+                      .snippet("STATIC")
                       .icon(BitmapDescriptorFactory.fromBitmap(AC_DATA.AircraftData[AcIndex].AC_Logo))
       );
 
@@ -964,6 +989,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                       .position(convert_to_lab(AC_DATA.AircraftData[AcIndex].AC_Carrot_Position))
                       .anchor((float) 0.5, (float) 0.5)
                       .draggable(false)
+                      .snippet("STATIC")
                       .icon(BitmapDescriptorFactory.fromBitmap(AC_DATA.AircraftData[AcIndex].AC_Carrot_Logo))
       );
     }
@@ -1022,6 +1048,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                     .position(convert_to_lab(AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpPosition))
                     .title(AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpName)
                     .draggable(false)
+                    .snippet("STATIC")
                     .anchor(0.5f,0.378f)
                     .icon(BitmapDescriptorFactory.fromBitmap(AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarkerIcon)));
                   AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.setVisible(AcMarkerVisible(AcInd));
@@ -1167,7 +1194,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       case R.id.action_settings:
 
         Intent intent = new Intent(this, SettingsActivity.class);
-        startActivity(intent);
 
         return true;
     }
@@ -1189,7 +1215,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     editor.commit();
     AC_DATA.mTcpClient.sendMessage("removeme");
     //TelemetryAsyncTask.isCancelled();
-    //AC_DATA.mTcpClient.stopClient();
+    AC_DATA.mTcpClient.stopClient();
     isTaskRunning= false;
     //TelemetryAsyncTask.cancel(true);
 
@@ -1200,7 +1226,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     @Override
     protected void onRestart() {
         super.onRestart();
-
+        AC_DATA.setup_udp();
         //Force to reconnect
         //TcpSettingsChanged = true;
         TelemetryAsyncTask = new ReadTelemetry();
@@ -1221,7 +1247,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   @Override
   protected void onStart() {
     super.onStop();
-
+    Log.d("inspection", "started");
     AppStarted = true;
     MapZoomLevel = AppSettings.getFloat("MapZoomLevel", 16.0f);
 
@@ -1679,7 +1705,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
             }
 
         //3 try to read & parse udp data
-        AC_DATA.read_udp_data();
+        AC_DATA.read_udp_data(sSocket);
 
         //4 check ui changes
         if (AC_DATA.ViewChanged) {
