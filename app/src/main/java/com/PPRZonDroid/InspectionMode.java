@@ -162,7 +162,7 @@ public class InspectionMode extends ActionBarActivity {
 					pitch = 0;
 					roll = 0;
 					//don't forget offset to accomodate for imperfect ground level of lab
-					float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude) + .300088f;
+					float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude) - .300088f;
 					AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
 							AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
 				}

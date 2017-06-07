@@ -134,7 +134,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public static final String Control_Pass = "app_password";
   public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
   public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
-  public static final String HIDE_PFD = "hide_pfd";
+  public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
+  public static final String SHOW_FLIGHT_CONTROLS = "show_flight_controls";
 
   public static final int SERVER_STRING = 1;
 
@@ -210,6 +211,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   private boolean isTaskRunning;
 
   private boolean DisableScreenDim;
+  private boolean DisplayFlightInfo;
+  private boolean ShowFlightControls;
 
   private CountDownTimer BL_CountDown;
   private int BL_CountDownTimerValue;
@@ -270,7 +273,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     AppPassword = (AppSettings.getString("app_password", ""));
 
     DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
-    hidePFD = AppSettings.getBoolean(HIDE_PFD, false);
 
     /* Setup waypoint dialog */
     WpDialog = new Dialog(this);
@@ -407,8 +409,17 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         @Override
         public void onClick(View view) {
             send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 9, true);
-            Intent inspect = new Intent(MainActivity.this, InspectionMode.class);
-            startActivityForResult(inspect, SERVER_STRING);
+            new CountDownTimer(1000, 100) {
+                @Override
+                public void onTick(long l) {
+                }
+
+                @Override
+                public void onFinish() {
+                    Intent inspect = new Intent(MainActivity.this, InspectionMode.class);
+                    startActivityForResult(inspect, SERVER_STRING);
+                }
+            }.start();
         }
     });
 
@@ -1194,7 +1205,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       case R.id.action_settings:
 
         Intent intent = new Intent(this, SettingsActivity.class);
-
+        startActivity(intent);
         return true;
     }
     return super.onOptionsItemSelected(item);
@@ -1300,13 +1311,15 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   //Settings change listener
   @Override
   public void onSharedPreferenceChanged(SharedPreferences AppSettings, String key) {
+      LinearLayout topbar = (LinearLayout) findViewById(R.id.topFlightBar);
+      LinearLayout bottombar = (LinearLayout) findViewById(R.id.bottomFlightBar);
+      ImageView flightcontrol = (ImageView) findViewById(R.id.imageView_Pfd);
+//      ImageView launchimage = (ImageView) findViewById(R.id.imageLaunch);
+//      ImageView ressurectimage = (ImageView) findViewById(R.id.imageResurrect);
+//      ImageView killimage = (ImageView) findViewById(R.id.imageKill);
+//      ImageView altimage = (ImageView) findViewById(R.id.imageAlt);
 
     //Changed settings will be applied on nex iteration of async task
-
-    if(key.equals(HIDE_PFD)) {
-        hidePFD = AppSettings.getBoolean(HIDE_PFD, false);
-    }
-
 
     if (key.equals(SERVER_IP_ADDRESS)) {
       AC_DATA.ServerIp = AppSettings.getString(SERVER_IP_ADDRESS, getString(R.string.pref_ip_address_default));
@@ -1360,6 +1373,36 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
       if (DEBUG) Log.d("PPRZ_info", "Screen dim settings changed : " + DisableScreenDim);
     }
+      if (key.equals(DISPLAY_FLIGHT_INFO)){
+          DisplayFlightInfo = AppSettings.getBoolean((DISPLAY_FLIGHT_INFO), true);
+          if (DisplayFlightInfo) {
+              topbar.setVisibility(View.VISIBLE);
+              bottombar.setVisibility(View.VISIBLE);
+          }
+          else {
+              topbar.setVisibility(View.INVISIBLE);
+              bottombar.setVisibility(View.INVISIBLE);
+          }
+
+      }
+      if (key.equals(SHOW_FLIGHT_CONTROLS)){
+          ShowFlightControls = AppSettings.getBoolean((SHOW_FLIGHT_CONTROLS), true);
+          if (ShowFlightControls) {
+              flightcontrol.setVisibility(View.VISIBLE);
+//              launchimage.setVisibility(View.VISIBLE);
+//              ressurectimage.setVisibility(View.VISIBLE);
+//              killimage.setVisibility(View.VISIBLE);
+//              altimage.setVisibility(View.VISIBLE);
+
+          }
+          else{
+              flightcontrol.setVisibility(View.INVISIBLE);
+//              launchimage.setVisibility(View.INVISIBLE);
+//              ressurectimage.setVisibility(View.INVISIBLE);
+//              killimage.setVisibility(View.INVISIBLE);
+//              altimage.setVisibility(View.INVISIBLE);
+          }
+      }
 
   }
 
