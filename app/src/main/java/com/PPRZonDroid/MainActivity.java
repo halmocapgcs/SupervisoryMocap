@@ -47,7 +47,7 @@
  *     ID numbers MUST be recalculated. The same is true for the selected visible waypoints. This
  *     all takes place in the set_selected_block method, hopefully a more elegant fix can be
  *     developed at some point. Note that there is also a hard-coded component for the special case
- *     PAUSE timer prevention which is activated in the setup_block_list method. Inspection mode
+ *     PAUSE timer prevention which is activated in the setup_command_list method. Inspection mode
  *     would also need to be adjusted
  */
 
@@ -137,8 +137,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
   public static final String SHOW_FLIGHT_CONTROLS = "show_flight_controls";
 
-  public static final int SERVER_STRING = 1;
-
   public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   boolean AcLocked = false;
   TextView DialogTextWpName;
@@ -194,17 +192,17 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   private boolean AppStarted = false;             //App started indicator
   private CharSequence mTitle;
 
-  //variables for adding marker feature and for connecting said markers
+  //Variables for adding marker feature and for connecting said markers
   public LinkedList<Marker> mMarkerHead = new LinkedList<Marker>();
   public LinkedList<LatLng> pathPoints = new LinkedList<LatLng>();
-  public LinkedList<LatLng> pastPoints = new LinkedList<LatLng>();
   public int mrkIndex = 0;
   public Polyline path;
-  public Polyline pastPath;
-  public boolean firstRun = true;
+  public boolean pathInitialized = false;
 
+  //Establish static socket to be used across activities
   static DatagramSocket sSocket = null;
 
+  //Potentially necessary ground offset value to adjust the fact that the lab is recorded as below 0m
   final float GROUND_OFFSET = .300088f;
   //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   //Background task to read and write telemery msgs
@@ -260,11 +258,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
    * Bound UI items
    */
   private void set_up_app() {
-
-
-
-    //if ( Debug.isDebuggerConnected() ) DEBUG= true;
-    //else DEBUG=false;
 
       //Get app settings
     AppSettings = PreferenceManager.getDefaultSharedPreferences(this);
@@ -386,7 +379,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 
     //Setup Block list
-    setup_block_list();
+    setup_command_list();
 
 
 
@@ -399,7 +392,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     MapAlt = (TextView) findViewById(R.id.Alt_On_Map);
     MapThrottle = (TextView) findViewById(R.id.ThrottleText);
     Pfd = (ImageView) findViewById(R.id.imageView_Pfd);
-    //mToolTip = (ImageView) findViewById(R.id.imageFeedBack );
 
     Button_ConnectToServer = (Button) findViewById(R.id.Button_ConnectToServer);
     setup_map_ifneeded();
@@ -417,7 +409,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 @Override
                 public void onFinish() {
                     Intent inspect = new Intent(MainActivity.this, InspectionMode.class);
-                    startActivityForResult(inspect, SERVER_STRING);
+                    startActivity(inspect);
                 }
             }.start();
         }
@@ -426,18 +418,13 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
     ChangeVisibleAcButon.setSelected(false);
 
-    TextViewApMode = (TextView) findViewById(R.id.Ap_Status_On_Map);
-    TextViewGpsMode = (TextView) findViewById(R.id.Gps_Status_On_Map);
-    TextViewFlightTime = (TextView) findViewById(R.id.Flight_Time_On_Map);
     TextViewBattery = (TextView) findViewById(R.id.Bat_Vol_On_Map);
-    TextViewStateFilterMode = (TextView) findViewById(R.id.State_Filter_On_Map);
     TextViewSpeed = (TextView) findViewById(R.id.SpeedText);
-    TextViewAirspeed = (TextView) findViewById(R.id.AirSpeed_On_Map);
-    TextViewAirspeed.setVisibility(View.INVISIBLE);
+    TextViewFlightTime = (TextView) findViewById(R.id.Flight_Time_On_Map);
 
   }
 
-  private  void setup_block_list() {
+  private  void setup_command_list() {
 
       //Block Listview
       setup_counter();
@@ -447,10 +434,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       //
       BlListView = (ListView) findViewById(R.id.BlocksList);
 
-      if(!hidePFD) {
-          View FlightControls = getLayoutInflater().inflate(R.layout.flight_controls, null);
-          BlListView.addHeaderView(FlightControls);
-      }
+      View FlightControls = getLayoutInflater().inflate(R.layout.flight_controls, null);
+      BlListView.addHeaderView(FlightControls);
+
 
       BlListView.setAdapter(mBlListAdapter);
       BlListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -462,7 +448,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
               JumpToBlock= position-1;
 
               //this if statement is used to prevent the timer from activating for the pause block
-              if(JumpToBlock == 9){
+              if(JumpToBlock == 2){
                   mBlListAdapter.ClickedInd = -1;
                   set_selected_block(JumpToBlock, false);
               }
@@ -543,89 +529,181 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   }
 
-   /**
-   * Set Selected Block
-   *
-   * @param BlocId
-   */
-  private void set_selected_block(int BlocId,boolean ReqFromServer) {
+  //this implementation of blocks works for when we are showing all (or at least most) of the flight
+  //plans pre-designated blocks. We want to create our own custom blocks that hide most of this
+  //looping, which has been created below
+//  private void set_selected_block(int BlocId,boolean ReqFromServer) {
+//
+//    //AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock = BlocId;
+//
+//    if (ReqFromServer){
+//        mBlListAdapter.SelectedInd = BlocId + 1;
+//        mBlListAdapter.notifyDataSetChanged();
+//
+//        //this checks to see if the server is at the arrived block, in which case we shift back
+//        //to the next waypoint block which is handled locally rather than with the reqfromserver tag
+//        if(BlocId == 7){
+//
+//            /* current implementation removes the connecting polyline from previous wp
+//             *  as well as that previous wp */
+//
+//            Marker popped = mMarkerHead.removeFirst();
+//            popped.remove();
+//            mrkIndex--;
+//
+//            pathPoints.removeFirst();
+//            adjust_marker_lines();
+//
+//            //code below would be used to change an old waypoint grey rather than removing it
+////            popped.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
+////                    "grey", popped.getTitle(), AC_DATA.GraphicsScaleFactor)));
+//
+//            //timer used to pause between wps to give the user some breathing room
+//            new CountDownTimer(500, 100){
+//                @Override
+//                public void onTick(long l) {
+//                }
+//                @Override
+//                public void onFinish() {
+//                    //continues the loop by updating next waypoint
+//                    set_selected_block(6, false);
+//                }
+//            }.start();
+//
+//
+//
+//        }
+//    }
+//    //if start is pressed, we need to handle this special case to move to the next block but with
+//    //the reqfromserver variable set false in order to trigger the local code that adjusts the wps
+//    else if(BlocId == 5){
+//        set_selected_block(6, false);
+//    }
+//    //added feature here to loop through the Next Waypoint! block, which is block number 6
+//    else if(BlocId == 6 && mMarkerHead.peek() != null){
+//        Marker newNEXT = mMarkerHead.peek();
+//        LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
+//        float altitude = Float.parseFloat(newNEXT.getSnippet());
+//        float adjustedAltitude = altitude - GROUND_OFFSET;
+//        //Note below that 31 is the AC id for our ardrone and 7 is the waypoint number for NEXT
+//        SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + 31 + " " + 7 +
+//                " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + adjustedAltitude;
+//        send_to_server(SendStringBuf, true);
+//
+//        //timer is needed to ensure paparazzi system corrects waypoint first
+//        new CountDownTimer(1000, 1000){
+//            @Override
+//            public void onTick(long l) {}
+//
+//            @Override
+//            public void onFinish() {
+//                send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 6, true);
+//            }
+//        }.start();
+//    }
+//    else {
+//        //Notify server
+//        send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + BlocId, true);
+//
+//    }
+//  }
 
-    //AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock = BlocId;
+    private void set_selected_block(int BlocId,boolean ReqFromServer) {
 
-    if (ReqFromServer){
-        mBlListAdapter.SelectedInd = BlocId + 1;
-        mBlListAdapter.notifyDataSetChanged();
+        //AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock = BlocId;
 
-        //this checks to see if the server is at the arrived block, in which case we shift back
-        //to the next waypoint block which is handled locally rather than with the reqfromserver tag
-        if(BlocId == 7){
+        if (ReqFromServer){
 
-            Marker popped = mMarkerHead.removeFirst();
-            popped.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
-                    "grey", popped.getTitle(), AC_DATA.GraphicsScaleFactor)));
+            //this checks to see if the server is at the arrived block, in which case we shift back
+            //to the next waypoint block which is handled locally rather than with the reqfromserver tag
+            if(BlocId == 7){
 
-            /* current implementation simply removes the connecting polyline from previous wp
-             *  to indicate that a wp has been reached */
+            /* current implementation removes the connecting polyline from previous wp
+             *  as well as that previous wp */
 
-            pathPoints.removeFirst();
-            adjust_marker_lines();
+                Marker popped = mMarkerHead.removeFirst();
+                popped.remove();
+                mrkIndex--;
 
+                pathPoints.removeFirst();
+                adjust_marker_lines();
 
-            /* code below removes the waypoint upon arrival, unused in current implementation */
+                //code below would be used to change an old waypoint grey rather than removing it
+//              popped.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
+//                    "grey", popped.getTitle(), AC_DATA.GraphicsScaleFactor)));
 
-            //popped.remove();
-            //mrkIndex--;
-            //adjust_marker_titles();
+                //timer used to pause between wps to give the user some breathing room
+                new CountDownTimer(500, 100){
+                    @Override
+                    public void onTick(long l) {
+                    }
+                    @Override
+                    public void onFinish() {
+                        //continues the loop by updating next waypoint
+                        set_selected_block(1, false);
+                    }
+                }.start();
+            }
 
-            //timer used to pause between wps to give the user some breathing room
-            new CountDownTimer(500, 100){
+            //adjust path lines if pause is triggered
+            else if (BlocId == 8){
+                pathPoints.removeFirst();
+                pathPoints.addFirst(AC_DATA.AircraftData[0].AC_Carrot_Marker.getPosition());
+                adjust_marker_lines();
+            }
+        }
+        else if(BlocId == 0){
+            //start engine
+            send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 2, true);
+            //wait for paparazzi to register command
+            new CountDownTimer(1000,1000){
                 @Override
-                public void onTick(long l) {
-                }
+                public void onTick(long l) {}
+
                 @Override
-                public void onFinish() {
-                    //continues the loop by updating next waypoint
-                    set_selected_block(6, false);
+                public void onFinish(){
+                    //takeoff
+                    send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 3, true);
                 }
             }.start();
+        }
+        //updates the flightplan to head to the next user-designated waypoint
+        else if(BlocId == 1 && mMarkerHead.peek() != null){
+            Marker newNEXT = mMarkerHead.peek();
+            LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
+            float altitude = Float.parseFloat(newNEXT.getSnippet());
+            float adjustedAltitude = altitude - GROUND_OFFSET;
+            //Note below that 31 is the AC id for our ardrone and 7 is the waypoint number for NEXT
+            SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + 31 + " " + 7 +
+                    " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + adjustedAltitude;
+            send_to_server(SendStringBuf, true);
 
+            //timer is needed to ensure paparazzi system corrects waypoint first
+            new CountDownTimer(1000, 1000){
+                @Override
+                public void onTick(long l) {}
 
-
+                @Override
+                public void onFinish() {
+                    send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 6, true);
+                }
+            }.start();
+        }
+        else if(BlocId == 1 && mMarkerHead.peek() == null && pathInitialized){
+            Toast.makeText(getApplicationContext(), "No waypoints to fly to!", Toast.LENGTH_SHORT).show();
+            pathPoints.clear();
+            adjust_marker_lines();
+        }
+        else if(BlocId == 2){
+            send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 9, true);
+        }
+        else if(BlocId == 3){
+            send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 10, true);
+        }
+        else if(BlocId == 4){
+            send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 11, true);
         }
     }
-    //if start is pressed, we need to handle this special case to move to the next block but with
-    //the reqfromserver variable set false in order to trigger the local code that adjusts the wps
-    else if(BlocId == 5){
-        set_selected_block(6, false);
-    }
-    //added feature here to loop through the Next Waypoint! block, which is block number 6
-    else if(BlocId == 6 && mMarkerHead.peek() != null){
-        Marker newNEXT = mMarkerHead.peek();
-        LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
-        float altitude = Float.parseFloat(newNEXT.getSnippet());
-        float adjustedAltitude = altitude - GROUND_OFFSET;
-        //Note below that 31 is the AC id for our ardrone and 7 is the waypoint number for NEXT
-        SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + 31 + " " + 7 +
-                " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + adjustedAltitude;
-        send_to_server(SendStringBuf, true);
-
-        //timer is needed to ensure paparazzi system corrects waypoint first
-        new CountDownTimer(1000, 1000){
-            @Override
-            public void onTick(long l) {}
-
-            @Override
-            public void onFinish() {
-                send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 6, true);
-            }
-        }.start();
-    }
-    else {
-        //Notify server
-        send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + BlocId, true);
-
-    }
-  }
 
   /**
    * Set Selected airplane
@@ -644,12 +722,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
     //set airspeed visibility
     if (AC_DATA.AircraftData[AC_DATA.SelAcInd].AirspeedEnabled) {
-        TextViewAirspeed.setVisibility(View.VISIBLE);
-        TextViewAirspeed.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].AirSpeed + " m/s");
+        //TextViewAirspeed.setVisibility(View.VISIBLE);
+        //TextViewAirspeed.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].AirSpeed + " m/s");
     }
       else
     {
-        TextViewAirspeed.setVisibility(View.INVISIBLE);
+        //TextViewAirspeed.setVisibility(View.INVISIBLE);
     }
 
     for (int i = 0; i <= AC_DATA.IndexEnd; i++) {
@@ -661,10 +739,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap(AC_DATA.AircraftData[i].AC_Logo);
         AC_DATA.AircraftData[i].AC_Marker.setIcon(bitmapDescriptor);
         //mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(AC_DATA.AircraftData[AC_DATA.SelAcInd].Position, MapZoomLevel), 1500, null);
-          if (centerAC)
-          {
-              //center_aircraft();
-          }
 
       }
 
@@ -684,11 +758,24 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     int i;
     BlList.clear();
 
+    /*  This implementation is for adding all blocks in a flight plan. Since we know what specific
+    blocks we want to allow the user to access (and are making some of our own), we're going to bypass
+    and directly add the five we know we want
+
     //the -3 added in this for loop makes it so that the nonessential landed, flare, and HOME
     //blocks do not appear for our app
     for (i = 0; i < AC_DATA.AircraftData[AC_DATA.SelAcInd].BlockCount-3; i++) {
       BlList.add(new BlockModel(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Blocks[i].BlName));
     }
+
+    */
+
+    BlList.add(new BlockModel("Takeoff"));
+    BlList.add(new BlockModel("Execute Flightplan"));
+    BlList.add(new BlockModel("Pause Flightplan"));
+    BlList.add(new BlockModel("Land Here"));
+    BlList.add(new BlockModel("Land at Origin"));
+
     mBlListAdapter.BlColor = AC_DATA.muiGraphics.get_color(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Color);
     mBlListAdapter.SelectedInd = AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock;
 
@@ -806,24 +893,17 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
             launch_altitude_dialog(newMarker, "NEW");
 
             mMarkerHead.add(newMarker);
-			pathPoints.add(newMarker.getPosition());
-            pastPoints.add(newMarker.getPosition());
 			if((mrkIndex == 0)){
-                pathPoints.addFirst(convert_to_lab(new LatLng(36.005417, -78.940984)));
+                pathPoints.clear();
+                pathPoints.addFirst(AC_DATA.AircraftData[0].AC_Carrot_Marker.getPosition());
+                pathPoints.addLast(newMarker.getPosition());
 				path = mMap.addPolyline(new PolylineOptions()
                         .addAll(pathPoints)
 						.width(4)
 						.color(Color.RED));
-                //this lays the anchor point for the later used grey polylines
-                if(firstRun){
-                    pastPath = mMap.addPolyline(new PolylineOptions()
-                        .addAll(pastPoints)
-                        .width(4)
-                        .color(Color.GRAY));
-                    firstRun = false;
-                }
 			}
 			else{
+                pathPoints.addLast(newMarker.getPosition());
 				path.setPoints(pathPoints);
 			}
             mrkIndex++;
@@ -953,29 +1033,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   }
 
-//  private void refresh_map_lines(int AcInd) {
-//
-//    //Create the polyline object of ac if it hasn't been created before
-//    if (null == AC_DATA.AircraftData[AcInd].Ac_PolLine) {
-//          PolylineOptions mPolylineOptions = new PolylineOptions()
-//                  .addAll(AC_DATA.AircraftData[AcInd].AC_Path)
-//                  .width(2 * AC_DATA.GraphicsScaleFactor)
-//                  .color(AC_DATA.muiGraphics.get_color(AC_DATA.AircraftData[AcInd].AC_Color))
-//                  .geodesic(false);
-//          AC_DATA.AircraftData[AcInd].Ac_PolLine = mMap.addPolyline(mPolylineOptions);
-//     }
-//
-//    //Refresh polyline with new values
-//    AC_DATA.AircraftData[AcInd].Ac_PolLine.setPoints(AC_DATA.AircraftData[AcInd].AC_Path);
-//
-//    //Clean the flags
-//    if (AcInd == AC_DATA.SelAcInd || ShowOnlySelected == false) {
-//      AC_DATA.AircraftData[AcInd].Ac_PolLine.setVisible(true);
-//    } else {
-//      AC_DATA.AircraftData[AcInd].Ac_PolLine.setVisible(false);
-//    }
-//
-//  }
 
   /**
    * Amm markers of given AcIndex to map. AcIndex is not Ac ID!!!
@@ -1176,11 +1233,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //addMarkersToMap();
   }
 
-  //Function to center aircraft on map (can be integrated with Center_AC funct. )
-  private void center_aircraft() {
-    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(AC_DATA.AircraftData[AC_DATA.SelAcInd].Position, MapZoomLevel), 1500, null);
-  }
-
   @Override
   public void setTitle(CharSequence title) {
     mTitle = title;
@@ -1258,7 +1310,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   @Override
   protected void onStart() {
     super.onStop();
-    Log.d("inspection", "started");
+
     AppStarted = true;
     MapZoomLevel = AppSettings.getFloat("MapZoomLevel", 16.0f);
 
@@ -1312,12 +1364,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   @Override
   public void onSharedPreferenceChanged(SharedPreferences AppSettings, String key) {
       LinearLayout topbar = (LinearLayout) findViewById(R.id.topFlightBar);
-      LinearLayout bottombar = (LinearLayout) findViewById(R.id.bottomFlightBar);
       ImageView flightcontrol = (ImageView) findViewById(R.id.imageView_Pfd);
-//      ImageView launchimage = (ImageView) findViewById(R.id.imageLaunch);
-//      ImageView ressurectimage = (ImageView) findViewById(R.id.imageResurrect);
-//      ImageView killimage = (ImageView) findViewById(R.id.imageKill);
-//      ImageView altimage = (ImageView) findViewById(R.id.imageAlt);
 
     //Changed settings will be applied on nex iteration of async task
 
@@ -1377,11 +1424,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           DisplayFlightInfo = AppSettings.getBoolean((DISPLAY_FLIGHT_INFO), true);
           if (DisplayFlightInfo) {
               topbar.setVisibility(View.VISIBLE);
-              bottombar.setVisibility(View.VISIBLE);
           }
           else {
               topbar.setVisibility(View.INVISIBLE);
-              bottombar.setVisibility(View.INVISIBLE);
           }
 
       }
@@ -1389,18 +1434,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           ShowFlightControls = AppSettings.getBoolean((SHOW_FLIGHT_CONTROLS), true);
           if (ShowFlightControls) {
               flightcontrol.setVisibility(View.VISIBLE);
-//              launchimage.setVisibility(View.VISIBLE);
-//              ressurectimage.setVisibility(View.VISIBLE);
-//              killimage.setVisibility(View.VISIBLE);
-//              altimage.setVisibility(View.VISIBLE);
-
           }
           else{
               flightcontrol.setVisibility(View.INVISIBLE);
-//              launchimage.setVisibility(View.INVISIBLE);
-//              ressurectimage.setVisibility(View.INVISIBLE);
-//              killimage.setVisibility(View.INVISIBLE);
-//              altimage.setVisibility(View.INVISIBLE);
           }
       }
 
@@ -1780,11 +1816,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged) {
-          TextViewApMode.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].ApMode);
-          TextViewGpsMode.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].GpsMode);
           TextViewFlightTime.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].FlightTime);
           TextViewBattery.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Battery + "v");
-          TextViewStateFilterMode.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].StateFilterMode);
           TextViewSpeed.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Speed + "m/s");
           AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged = false;
         }
@@ -1956,9 +1989,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                     public void onClick(DialogInterface dialogInterface, int i) {
                         rMarker.remove();
                         if(mrkIndex>0) mrkIndex--;
-                        mMarkerHead.remove(rMarker);
-                        pathPoints.remove(rMarker.getPosition());
-                        //adjust_marker_titles();
+                        int index = mMarkerHead.indexOf(rMarker);
+                        mMarkerHead.remove(index);
+                        pathPoints.remove(index + 1);
                         adjust_marker_lines();
                     }
                 })
@@ -2037,7 +2070,4 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         altDialog.show();
     }
 
-
 }
-
-

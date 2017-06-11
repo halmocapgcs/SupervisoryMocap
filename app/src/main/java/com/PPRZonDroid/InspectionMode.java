@@ -131,9 +131,18 @@ public class InspectionMode extends ActionBarActivity {
 				else if(event.getAction()== MotionEvent.ACTION_UP) {
 					yaw = 0;
 					throttle = 63;
-					float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude) + .300088f;
-					AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
-							AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
+					new CountDownTimer(1000, 100) {
+						@Override
+						public void onTick(long l) {
+						}
+
+						@Override
+						public void onFinish() {
+							float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude);
+							AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
+									AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
+						}
+					}.start();
 				}
 					return true;
 			}
@@ -161,10 +170,18 @@ public class InspectionMode extends ActionBarActivity {
 				else if(event.getAction()== MotionEvent.ACTION_UP){
 					pitch = 0;
 					roll = 0;
-					//don't forget offset to accomodate for imperfect ground level of lab
-					float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude) - .300088f;
-					AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
-							AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
+					new CountDownTimer(1000, 100) {
+						@Override
+						public void onTick(long l) {
+						}
+
+						@Override
+						public void onFinish() {
+							float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude);
+							AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
+									AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
+						}
+					}.start();
 				}
 				return true;
 			}
@@ -178,7 +195,7 @@ public class InspectionMode extends ActionBarActivity {
 				//through so the drone doesn't revert to its original location and then b) time for
 				//the joystick mode to adjust back to auto2 or the drone triggers safe landing
 				AC_DATA.empty = false;
-				new CountDownTimer(1000, 100) {
+				new CountDownTimer(500, 100) {
 					@Override
 					public void onTick(long l) {}
 

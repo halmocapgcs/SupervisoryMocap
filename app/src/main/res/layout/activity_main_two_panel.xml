@@ -32,7 +32,7 @@
             android:orientation="horizontal"
             android:id="@+id/topFlightBar"
             android:layout_width="wrap_content"
-            android:layout_height="22dp"
+            android:layout_height="wrap_content"
             android:background="#1b1b1b"
             android:paddingTop="3dp"
             android:layout_gravity="top"
@@ -40,37 +40,9 @@
 
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView"
-                android:src="@drawable/throttle"
-                android:layout_marginLeft="3dp" />
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"></View>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="N/A"
-                android:id="@+id/ThrottleText"
-                android:layout_gravity="right|top"
-                android:textColor="#fff8f9"
-                android:textStyle="bold"
-                android:textSize="14dp" />
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center_vertical|center_horizontal"
                 android:id="@+id/imageView12"
                 android:src="@drawable/speed" />
             <View
@@ -85,7 +57,7 @@
                 android:layout_gravity="right|top"
                 android:textColor="#fff8f9"
                 android:textStyle="bold"
-                android:textSize="14dp" />
+                android:textSize="22sp" />
 
 
             <View
@@ -101,8 +73,9 @@
 
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center_vertical|center_horizontal"
                 android:id="@+id/imageView11"
                 android:src="@drawable/altitude" />
             <View
@@ -117,7 +90,7 @@
                 android:layout_gravity="right|top"
                 android:textColor="#fff8f9"
                 android:textStyle="bold"
-                android:textSize="14dp" />
+                android:textSize="22sp" />
 
             <View
                 android:layout_width="1dp"
@@ -130,37 +103,9 @@
                 android:layout_marginRight="4dp"></View>
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView10"
-                android:src="@drawable/gps" />
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"></View>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="N/A"
-                android:id="@+id/Gps_Status_On_Map"
-                android:layout_gravity="right|top"
-                android:textColor="#fff8f9"
-                android:textStyle="bold"
-                android:textSize="14dp" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center_vertical|center_horizontal"
                 android:id="@+id/imageView9"
                 android:src="@drawable/battery" />
             <View
@@ -175,7 +120,7 @@
                 android:layout_gravity="right|top"
                 android:textColor="#fff8f9"
                 android:textStyle="bold"
-                android:textSize="14dp" />
+                android:textSize="22sp" />
 
 
             <View
@@ -189,61 +134,16 @@
                 android:layout_marginRight="4dp"></View>
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView2"
-                android:src="@drawable/debug" />
-
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"
-                android:id="@+id/space" ></View>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="N/A"
-                android:id="@+id/State_Filter_On_Map"
-                android:layout_gravity="right|top"
-                android:textColor="#fff8f9"
-                android:textStyle="bold"
-                android:textSize="14dp" />
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
-
-
-        </LinearLayout>
-        <LinearLayout
-            android:orientation="horizontal"
-            android:id="@+id/bottomFlightBar"
-            android:layout_width="wrap_content"
-            android:layout_height="22dp"
-            android:layout_gravity="bottom"
-            android:background="#1b1b1b"
-            android:baselineAligned="false"
-            android:layout_weight="5"
-            android:paddingTop="3dp"
-            android:paddingRight="5dp"
-            android:paddingLeft="4dp">
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center_vertical|center_horizontal"
                 android:id="@+id/imageView3"
                 android:src="@drawable/fl_time"
                 android:layout_marginLeft="3dp" />
 
             <View
                 android:layout_width="5dp"
-                android:layout_height="fill_parent"
-                android:id="@+id/space2" ></View>
+                android:layout_height="fill_parent"/>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -253,73 +153,10 @@
                 android:layout_gravity="right|top"
                 android:textColor="#fff8f9"
                 android:textStyle="bold"
-                android:textSize="14dp" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView4"
-                android:src="@drawable/mode"
-                android:layout_marginLeft="3dp" />
-
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"></View>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="N/A"
-                android:id="@+id/Ap_Status_On_Map"
-                android:layout_gravity="right|top"
-                android:textColor="#fff8f9"
-                android:textStyle="bold"
-                android:textSize="14dp" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="N/A"
-                android:id="@+id/AirSpeed_On_Map"
-                android:layout_gravity="right|top"
-                android:textColor="#fff8f9"
-                android:textStyle="bold"
-                android:textSize="14dp"
-                android:focusable="false"
-                android:visibility="gone" />
-
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"
-                android:id="@+id/space3"></View>
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView8"
-                />
+                android:textSize="22sp" />
 
         </LinearLayout>
+
 
 
         <LinearLayout
