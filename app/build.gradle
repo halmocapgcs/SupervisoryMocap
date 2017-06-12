@@ -37,4 +37,5 @@ dependencies {
     compile 'com.android.support:gridlayout-v7:19.0.0'
     compile 'com.android.support:support-v13:19.0.0'
     compile 'com.android.support.constraint:constraint-layout:+'
+    compile "de.mrmaffen:vlc-android-sdk:1.0.6"
 }

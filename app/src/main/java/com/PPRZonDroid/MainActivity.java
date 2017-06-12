@@ -118,6 +118,23 @@ import java.util.LinkedList;
 
 import static com.PPRZonDroid.SettingsFragment.HIDE_UI;
 import static java.lang.Double.parseDouble;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.AsyncTask;
+import android.preference.PreferenceManager;
+import android.support.v7.app.ActionBarActivity;
+//import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import java.net.DatagramSocket;
 
 
 public class MainActivity extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -408,7 +425,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
                 @Override
                 public void onFinish() {
-                    Intent inspect = new Intent(MainActivity.this, InspectionMode.class);
+                    String url = "file:///sdcard/DCIM/video.sdp";
+                    Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
+                    inspect.putExtra("videoUrl", url);
                     startActivity(inspect);
                 }
             }.start();

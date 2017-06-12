@@ -7,6 +7,32 @@
     android:layout_height="match_parent"
     tools:context="com.PPRZonDroid.InspectionMode">
 
+    <!--
+    the double FrameLayout is necessary here to do cropping on the bottom right
+    (which requires the surface not be centered), while keeping the result centered
+   -->
+
+    <FrameLayout
+        android:layout_centerHorizontal="true"
+        android:layout_width="750dp"
+        android:layout_height="500dp"
+        android:fitsSystemWindows="false" >
+
+        <FrameLayout
+            android:id="@+id/player_surface_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:foregroundGravity="clip_horizontal|clip_vertical"
+            tools:ignore="true">
+            <SurfaceView
+                android:id="@+id/player_surface"
+                android:layout_width="650dp"
+                android:layout_height="450dp" />
+        </FrameLayout>
+    </FrameLayout>
+
+
     <RelativeLayout
         android:id="@+id/joystick_left"
         android:layout_width="250dp"

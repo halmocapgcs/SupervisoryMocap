@@ -41,10 +41,58 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+//package com.hal.manualmocap;
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
+import android.view.Display;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.widget.FrameLayout;
+import android.view.View;
+import android.widget.Button;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import org.videolan.libvlc.IVideoPlayer;
+import org.videolan.libvlc.LibVLC;
+import org.videolan.libvlc.LibVlcException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
-public class InspectionMode extends ActionBarActivity {
+public class InspectionMode extends Activity implements IVideoPlayer {
 
+	private static final String TAG = InspectionMode.class.getSimpleName();
+
+
+	private int mVideoHeight;
+	private int mVideoWidth;
+	private int mVideoVisibleHeight;
+	private int mVideoVisibleWidth;
+	private int mSarNum;
+	private int mSarDen;
+
+	private SurfaceView mSurfaceView;
+	private FrameLayout mSurfaceFrame;
+	private SurfaceHolder mSurfaceHolder;
+	private Surface mSurface = null;
+
+	private LibVLC mLibVLC;
+
+	private String mMediaUrl;
+	private String[] temp_options;
+	private String[] new_options;
 	private ReadTelemetry TelemetryAsyncTask;
 	boolean isTaskRunning;
 	private Thread mTCPthread;
@@ -73,6 +121,36 @@ public class InspectionMode extends ActionBarActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_inspection_mode);
 
+		mSurfaceView = (SurfaceView) findViewById(R.id.player_surface);
+		mSurfaceHolder = mSurfaceView.getHolder();
+
+		mSurfaceFrame = (FrameLayout) findViewById(R.id.player_surface_frame);
+		mMediaUrl = getIntent().getExtras().getString("videoUrl");
+		try {
+			mLibVLC = new LibVLC();
+			mLibVLC.setAout(mLibVLC.AOUT_AUDIOTRACK);
+			mLibVLC.setVout(mLibVLC.VOUT_ANDROID_SURFACE);
+			mLibVLC.setHardwareAcceleration(LibVLC.HW_ACCELERATION_FULL);
+
+
+			mLibVLC.init(getApplicationContext());
+		} catch (LibVlcException e){
+			Log.e(TAG, e.toString());
+		}
+
+		mSurface = mSurfaceHolder.getSurface();
+
+		mLibVLC.attachSurface(mSurface, InspectionMode.this);
+
+		temp_options = mLibVLC.getMediaOptions(0);
+		List<String> options_list = new ArrayList<String>(Arrays.asList(temp_options));
+
+
+		options_list.set(0,":file-caching=2000");
+		options_list.set(1,":network-caching=150");
+		new_options = options_list.toArray(new String[options_list.size()]);
+
+		mLibVLC.playMRL(mMediaUrl,new_options);
 		setup_app();
 		setup_telemetry_class();
 
@@ -82,6 +160,40 @@ public class InspectionMode extends ActionBarActivity {
 		//send paparazzi method to indicate switching to hover mode
 
 	}
+
+	protected void onDestroy() {
+		super.onDestroy();
+
+		// MediaCodec opaque direct rendering should not be used anymore since there is no surface to attach.
+		mLibVLC.stop();
+	}
+
+	public void eventHardwareAccelerationError() {
+		Log.e(TAG, "eventHardwareAccelerationError()!");
+		return;
+	}
+
+	@Override
+	public void setSurfaceLayout(final int width, final int height, int visible_width, int visible_height, final int sar_num, int sar_den){
+		Log.d(TAG, "setSurfaceSize -- START");
+		if (width * height == 0)
+			return;
+
+		// store video size
+		mVideoHeight = height;
+		mVideoWidth = width;
+		mVideoVisibleHeight = visible_height;
+		mVideoVisibleWidth = visible_width;
+		mSarNum = sar_num;
+		mSarDen = sar_den;
+
+		Log.d(TAG, "setSurfaceSize -- mMediaUrl: " + mMediaUrl + " mVideoHeight: " + mVideoHeight + " mVideoWidth: " + mVideoWidth + " mVideoVisibleHeight: " + mVideoVisibleHeight + " mVideoVisibleWidth: " + mVideoVisibleWidth + " mSarNum: " + mSarNum + " mSarDen: " + mSarDen);
+	}
+	@Override
+	public int configureSurface(android.view.Surface surface, int i, int i1, int i2){
+		return -1;
+	}
+
 
 
 	private void setup_telemetry_class() {
