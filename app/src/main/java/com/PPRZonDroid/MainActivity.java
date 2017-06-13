@@ -23,23 +23,35 @@
 /*
  * This is the main Activity class
  *
+ * Structure of this file is as follows:
+ *  -methods for intialization
+ *  -refresh methods
+ *  -onCreate, onStart, and other activity lifecycle
+ *  -UI methods
+ *  -methods added by HAL
+ *
+ * Additions for inspection mode button are in the setup. Additions for specific block functionality
+ * are in the methods dealing with the block counter towards the beginning. Additions for the marker
+ * functionality can be found in the setup method for the map. Most remaining additions are simply
+ * in the methods added by HAL
+ *
  * NOTE: The additions made for HAL's supervisory variant are as follow
  *     --ability to add waypoints
  *     --mapping of latitudes onto a ground overlay of the room
  *     --showing only certain waypoints, namely the ORIGIN
- *     --creating a looping feature for the Next Waypoint! block to execute flight plan
+ *     --only show five specific blocks, one of which loops through new waypoints
  *     --custom dialogs for wp removal and altitude adjustment
  *     --timer has been shortened from 3000 ms to 900 ms
  *     --lines connecting waypoints, are removed once subsequent wp is reached
- *     --reached wps turn grey
+ *     --reached wps are removed
  *     --icon now displays altitude rather than title
- *     --PFD can be turned off, but app must be exited and restarted for change to take place
+ *     --PFD can be turned off with checkbox toggle
  *     --landed, flare, and HOME blocks are not loaded into the block list adaptor
- *     --special case added so that START block triggers loop
  *     --special case added so that PAUSE block does not trigger timer
  *     --button added to launch inspection mode
  *     --STATIC snippet added to important wps so that they cannot be removed
  *          --current implementation of this does require that all markers are initialized w/ snippets
+ *     --Bigger AP information in the top left corner
  *
  *     The block ID and waypoint ID relevant to the looping through the added waypoints uses BlocId
  *     6 and waypoint 7. These have been hard coded into the activity and are flight plan specific
@@ -55,14 +67,10 @@ package com.PPRZonDroid;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -73,7 +81,6 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.DrawerLayout;
-import android.text.InputType;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -87,7 +94,6 @@ import android.view.animation.LayoutAnimationController;
 import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -97,7 +103,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMapOptions;
@@ -118,7 +123,6 @@ import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import static com.PPRZonDroid.SettingsFragment.HIDE_UI;
 import static java.lang.Double.parseDouble;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -157,31 +161,29 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public static final String SHOW_FLIGHT_CONTROLS = "show_flight_controls";
 
   public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
-  boolean AcLocked = false;
   boolean ShowOnlySelected = true;
   String AppPassword;
+
   //AP_STATUS
-  TextView TextViewApMode;
-  TextView TextViewGpsMode;
-  TextView TextViewStateFilterMode;
   TextView TextViewFlightTime;
   TextView TextViewBattery;
   TextView TextViewSpeed;
   TextView TextViewAirspeed;
+
   //AC Blocks
   ArrayList<BlockModel> BlList = new ArrayList<BlockModel>();
   BlockListAdapter mBlListAdapter;
   ListView BlListView;
   SharedPreferences AppSettings;                  //App Settings Data
   Float MapZoomLevel = 14.0f;
+
   //Ac Names
   ArrayList<Model> AcList = new ArrayList<Model>();
   AcListAdapter mAcListAdapter;
   ListView AcListView;
   boolean TcpSettingsChanged;
   boolean UdpSettingsChanged;
-  int DialogAcId;
-  int DialogWpId;
+
   //UI components (needs to be bound onCreate
   private GoogleMap mMap;
   private TextView MapAlt;
@@ -208,7 +210,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   //Establish static socket to be used across activities
   static DatagramSocket sSocket = null;
 
-  //Potentially necessary ground offset value to adjust the fact that the lab is recorded as below 0m
+  //Unused, but potentially useful ground offset value to adjust the fact that the lab is recorded
+  // as below 0m
   final float GROUND_OFFSET = .300088f;
   //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   //Background task to read and write telemery msgs
@@ -234,8 +237,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   }
 
   private Thread mTCPthread;
-
-  private NumberPicker mNumberPickerThus,mNumberPickerHuns, mNumberPickerTens,mNumberPickerOnes;
 
   /**
    * Setup TCP and UDP connections of Telemetry class
@@ -278,7 +279,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
     //Setup AC List
     setup_ac_list();
-
 
     //Setup Block list
     setup_command_list();
@@ -361,11 +361,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
           }
       });
-
-
-
   }
 
+  //primes countdown timer
   private void setup_counter() {
       //Get timeout from appsettings
       BL_CountDownTimerDuration = Integer.parseInt(AppSettings.getString("block_change_timeout", "3")) *300;
@@ -399,6 +397,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       };
   }
 
+  //largely unnecessary, this was to allow multiple drones to load at the same time, left menu
   private void setup_ac_list() {
       mAcListAdapter = new AcListAdapter(this, generateDataAc());
 
@@ -516,8 +515,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
         if (ReqFromServer){
 
-            //this checks to see if the server is at the arrived block, in which case we shift back
-            //to the next waypoint block which is handled locally rather than with the reqfromserver tag
+            //this checks to see if the server is at the "Arrived" block, in which case we shift back
+            //to the "Next Waypoint" block which is handled locally rather than with the reqfromserver tag
             if(BlocId == 7){
 
             /* current implementation removes the connecting polyline from previous wp
@@ -596,12 +595,15 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
             pathPoints.clear();
             adjust_marker_lines();
         }
+        //pause flightplan
         else if(BlocId == 2){
             send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 9, true);
         }
+        //land here
         else if(BlocId == 3){
             send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 10, true);
         }
+        //land at origin
         else if(BlocId == 4){
             send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 11, true);
         }
@@ -640,20 +642,16 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         AC_DATA.AircraftData[i].AC_Logo = AC_DATA.muiGraphics.create_ac_icon(AC_DATA.AircraftData[i].AC_Type, AC_DATA.AircraftData[i].AC_Color, AC_DATA.GraphicsScaleFactor, (i == AC_DATA.SelAcInd));
         BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap(AC_DATA.AircraftData[i].AC_Logo);
         AC_DATA.AircraftData[i].AC_Marker.setIcon(bitmapDescriptor);
-        //mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(AC_DATA.AircraftData[AC_DATA.SelAcInd].Position, MapZoomLevel), 1500, null);
 
       }
-
     }
-
       mAcListAdapter.SelectedInd = AcInd;
       mAcListAdapter.notifyDataSetChanged();
       refresh_ac_list();
-
   }
 
   /**
-   * Refresh block lisst on right
+   * Refresh block list on right
    */
   private void refresh_block_list() {
 
@@ -716,19 +714,24 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     }
   }
 
-  //Setup map & zoom listener
+  //Setup map & marker components
   private void setup_map() {
 
-    GoogleMapOptions mMapOptions = new GoogleMapOptions();
+      GoogleMapOptions mMapOptions = new GoogleMapOptions();
 
-    mMap.getUiSettings().setTiltGesturesEnabled(false);
-    //Read device settings for Gps usage.
-    mMap.setMyLocationEnabled(AppSettings.getBoolean("use_gps_checkbox", true));
+      //Read device settings for Gps usage.
+      mMap.setMyLocationEnabled(AppSettings.getBoolean("use_gps_checkbox", true));
 
-    //Set map type
-    mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+      //Set map type
+      mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 
-    //Set zoom level and the position of the lab
+      //Disable zoom and gestures to lock the image in place
+      mMap.getUiSettings().setAllGesturesEnabled(false);
+      mMap.getUiSettings().setZoomGesturesEnabled(false);
+      mMap.getUiSettings().setCompassEnabled(false);
+      mMap.getUiSettings().setTiltGesturesEnabled(false);
+
+      //Set zoom level and the position of the lab
       LatLng labOrigin = new LatLng(36.005417, -78.940984);
       mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(labOrigin, 50));
       CameraPosition rotated = new CameraPosition.Builder()
@@ -738,45 +741,44 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
               .build();
       mMap.moveCamera(CameraUpdateFactory.newCameraPosition(rotated));
 
-      //Disable zoom and gestures to lock the image in place
-      mMap.getUiSettings().setAllGesturesEnabled(false);
-      mMap.getUiSettings().setZoomGesturesEnabled(false);
-      mMap.getUiSettings().setCompassEnabled(false);
-
       //Create the ground overlay
-      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.fullroomorigin);
+      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.fullroom);
       GroundOverlay trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
-              .position(labOrigin, (float) 77.15)
+              .position(labOrigin, (float) 77.15)   //note if you change size of map you need to redo this val too
               .bearing(90.0f));
 
 
-    //Setup markers drag listeners that update alt and polylines when moved
-    mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+      //Setup markers drag listeners that update polylines when moved
+      mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
 
-      @Override
-      public void onMarkerDragStart(Marker marker) {
-          int index = mMarkerHead.indexOf(marker);
-          pathPoints.set(index + 1, marker.getPosition());
-          path.setPoints(pathPoints);
-      }
-
-      @Override
-      public void onMarkerDragEnd(Marker marker) {
-          if(!mMarkerHead.contains(marker)) {
-              waypoint_changed(marker.getId(), marker.getPosition(), "Waypoint changed");
+          @Override
+          public void onMarkerDragStart(Marker marker) {
+              int index = mMarkerHead.indexOf(marker);
+              pathPoints.set(index + 1, marker.getPosition());
+              path.setPoints(pathPoints);
           }
-          //else statement ensures we do not send a paparazzi message for a waypoint that doesn't exist
-          else{
-			  launch_altitude_dialog(marker, "OLD");
-          }
-      }
 
-      @Override
-      public void onMarkerDrag(Marker marker) {
-          int index = mMarkerHead.indexOf(marker);
-          pathPoints.set(index + 1, marker.getPosition());
-          path.setPoints(pathPoints);
+
+          @Override
+          public void onMarkerDrag(Marker marker) {
+              int index = mMarkerHead.indexOf(marker);
+              pathPoints.set(index + 1, marker.getPosition());
+              path.setPoints(pathPoints);
+          }
+
+          @Override
+          public void onMarkerDragEnd(Marker marker) {
+              if(!mMarkerHead.contains(marker)) {
+                  // this is code from the original app, works well but we don't want to allow users
+                  // to change predesignated waypoints that we choose to show them
+
+                  // waypoint_changed(marker.getId(), marker.getPosition(), "Waypoint changed");
+             }
+                //else statement ensures we do not send a paparazzi message for a waypoint that doesn't exist
+              else{
+			    launch_altitude_dialog(marker, "OLD");
+              }
       }
     });
 
@@ -816,6 +818,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //listener to add in remove on click functionality and altitude control
     mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
         public boolean onMarkerClick(final Marker marker){
+            //if statement prevents removal of origin and drone icon
             if(!marker.getSnippet().equals("STATIC")) {
                 AlertDialog adjustDialog = new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Adjust Waypoint")
@@ -837,13 +840,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 adjustDialog.show();
             }
             return true;
-        }
-    });
-
-    mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-        @Override
-        public void onMapClick(LatLng latLng) {
-            Log.d("coord", latLng.toString());
         }
     });
 
@@ -892,12 +888,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   /**
    * Play warning sound if airspeed goes below the selected value
-   *
-   * @param context
-   * @throws IllegalArgumentException
-   * @throws SecurityException
-   * @throws IllegalStateException
-   * @throws IOException
    */
   public void play_sound(Context context) throws IllegalArgumentException,
           SecurityException,
@@ -945,9 +935,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 
   /**
-   * Amm markers of given AcIndex to map. AcIndex is not Ac ID!!!
-   *
-   * @param AcIndex
+   * Add markers of given AcIndex to map. AcIndex is not Ac ID!!! Ac ID for our drone is 31,
+   * AcIndex is 0 as it is the first and only drone in the aircraftdata. Feel free to remove the
+   * functionality of having multiple drones if you want.
    */
   private void add_markers_2_map(int AcIndex) {
 
@@ -973,11 +963,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     }
   }
 
-  //REfresh markers
+  //Refresh markers
   private void refresh_markers() {
 
-    //Method below is better..
-    //
     int i;
 
     for (i = 0; i <= AC_DATA.IndexEnd; i++) {
@@ -999,9 +987,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
     }
 
-
     //Check markers
-
     if (AC_DATA.NewMarkerAdded)   //Did we add any markers?
     {
       int AcInd;
@@ -1049,13 +1035,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       AC_DATA.NewMarkerAdded = false;
     }
 
-
     //Handle marker modified msg
-
     if (AC_DATA.MarkerModified)   //
     {
 
-      //Log.d("PPRZ_info", "Marker modified for whom?");
       int AcInd;
       for (AcInd = 0; AcInd <= AC_DATA.IndexEnd; AcInd++) {     //Search thru all aircrafts and check if they have marker added flag
 
@@ -1149,11 +1132,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
-
     // Inflate the menu; this adds items to the action bar if it is present.
     getMenuInflater().inflate(R.menu.main, menu);
     return true;
-
   }
 
   @Override
@@ -1185,10 +1166,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     // Commit the edits!
     editor.commit();
     AC_DATA.mTcpClient.sendMessage("removeme");
-    //TelemetryAsyncTask.isCancelled();
+
+    //note that we must trigger stop to allow new connection in inspection mode
     AC_DATA.mTcpClient.stopClient();
     isTaskRunning= false;
-    //TelemetryAsyncTask.cancel(true);
 
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -1210,9 +1191,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //enable screen dim
-
-
     }
 
   @Override
@@ -1401,19 +1379,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   }
 
-  //Launch function
-  public void launch_ac(View mView) {
-
-    if (AC_DATA.SelAcInd >= 0) {
-
-      send_to_server("dl DL_SETTING " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_LaunchID + " 1.000000", true);
-      //dl DL_SETTING 5 8 1.000000
-    } else {
-      Toast.makeText(getApplicationContext(), "No AC data yet!", Toast.LENGTH_SHORT).show();
-    }
-  }
-
-  //Kill throttle function
+  //Kill throttle function, unused but might at some point be useful.
   public void kill_ac(View mView) {
 
     if (AC_DATA.SelAcInd >= 0) {
@@ -1452,7 +1418,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     }
   }
 
-  //Resurrect function
+  //Resurrect function, unused but could also be useful
   public void resurrect_ac(View mView) {
     //dl DL_SETTING 5 9 0.000000
     if (AC_DATA.SelAcInd >= 0) {
@@ -1617,10 +1583,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           publishProgress("ee");
           AC_DATA.ViewChanged = false;
         }
-
-
-
-
       }
 
       if (DEBUG) Log.d("PPRZ_info", "Stopping AsyncTask ..");
