@@ -280,7 +280,6 @@ public class Telemetry {
         AircraftData[AcIndex].Speed = ParsedData[8].substring(0, (ParsedData[8].indexOf(".") + 2));
         AircraftData[AcIndex].Altitude = ParsedData[10].substring(0, ParsedData[10].indexOf("."));
         AircraftData[AcIndex].RawAltitude = ParsedData[10];
-        Log.d("inspection", AircraftData[AcIndex].RawAltitude);
         AircraftData[AcIndex].AGL = ParsedData[12].substring(0, ParsedData[12].indexOf("."));
 
         if (!AircraftData[AcIndex].Altitude.equals(AircraftData[AcIndex].AGL)) {

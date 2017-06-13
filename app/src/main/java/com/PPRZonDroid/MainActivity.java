@@ -61,6 +61,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -156,16 +158,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   boolean AcLocked = false;
-  TextView DialogTextWpName;
-  Button DialogButtonConfirm;
-  Button Alt_DialogButtonConfirm;
-  Button Alt_ResToDlAlt;
-  Button Alt_ResToDesAlt;
-  EditText DialogWpAltitude;
-  TextView DialogTextWpLat;
-  TextView DialogTextWpLon;
-  Button DialogAltUp;
-  Button DialogAltDown;
   boolean ShowOnlySelected = true;
   String AppPassword;
   //AP_STATUS
@@ -186,7 +178,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   ArrayList<Model> AcList = new ArrayList<Model>();
   AcListAdapter mAcListAdapter;
   ListView AcListView;
-  boolean hidePFD;
   boolean TcpSettingsChanged;
   boolean UdpSettingsChanged;
   int DialogAcId;
@@ -200,9 +191,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   private Button Button_ConnectToServer, Button_LaunchInspectionMode;
   private ToggleButton ChangeVisibleAcButon;
   private DrawerLayout mDrawerLayout;
-  //Dialog components
-  private Dialog WpDialog;
-  private Dialog AltDialog;
+
   //Position descriptions >> in future this needs to be an array or struct
   private LatLng AC_Pos = new LatLng(43.563958, 1.481391);
   private String SendStringBuf;
@@ -284,110 +273,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
     DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
 
-    /* Setup waypoint dialog */
-    WpDialog = new Dialog(this);
-    WpDialog.setContentView(R.layout.wp_modified);
-
-    DialogTextWpName = (TextView) WpDialog.findViewById(R.id.textViewWpName);
-    DialogButtonConfirm = (Button) WpDialog.findViewById(R.id.buttonConfirm);
-    DialogWpAltitude = (EditText) WpDialog.findViewById(R.id.editTextAltitude);
-    DialogTextWpLat = (TextView) WpDialog.findViewById(R.id.textViewLatitude);
-    DialogTextWpLon = (TextView) WpDialog.findViewById(R.id.textViewLongitude);
-    DialogAltUp = (Button) WpDialog.findViewById(R.id.buttonplust);
-    DialogAltDown = (Button) WpDialog.findViewById(R.id.buttonmint);
-
-    DialogAltDown.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        Double alt = parseDouble(DialogWpAltitude.getText().toString()) - 10;
-        DialogWpAltitude.setText(alt.toString());
-      }
-    });
-
-    DialogAltUp.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        Double alt = parseDouble(DialogWpAltitude.getText().toString()) + 10;
-        DialogWpAltitude.setText(alt.toString());
-      }
-    });
-
-    DialogButtonConfirm.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-
-        SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + DialogAcId + " " + DialogWpId +
-                " " + DialogTextWpLat.getText() + " " + DialogTextWpLon.getText() + " " + DialogWpAltitude.getText();
-        send_to_server(SendStringBuf, true);
-        WpDialog.dismiss();
-      }
-    });
-
-    /* Setup altitude dialog */
-    AltDialog = new Dialog(this);
-    AltDialog.setContentView(R.layout.alt_modified);
-
-    Alt_DialogButtonConfirm= (Button) AltDialog.findViewById(R.id.buttonConfAlt);
-
-      Alt_DialogButtonConfirm.setOnClickListener(new View.OnClickListener() {
-          @Override
-          public void onClick(View v) {
-
-              String DlAlt ="";
-
-              DlAlt= DlAlt + mNumberPickerThus.getValue();
-              DlAlt= DlAlt + mNumberPickerHuns.getValue();
-              DlAlt= DlAlt + mNumberPickerTens.getValue();
-              DlAlt= DlAlt + mNumberPickerOnes.getValue();
-              SendStringBuf = "dl DL_SETTING " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_AltID +  " " + DlAlt;
-              //Log.d("PPRZ_info", SendStringBuf );
-              send_to_server(SendStringBuf, true);
-
-              AltDialog.dismiss();
-          }
-      });
-
-    Alt_ResToDlAlt =  (Button) AltDialog.findViewById(R.id.buttonResToDlAlt);
-      Alt_ResToDlAlt.setOnClickListener(new View.OnClickListener() {
-          @Override
-          public void onClick(View v) {
-
-             fill_alt(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_DlAlt);
-
-          }
-      });
-
-
-    Alt_ResToDesAlt =  (Button) AltDialog.findViewById(R.id.buttonResToAcAlt);
-      Alt_ResToDesAlt.setOnClickListener(new View.OnClickListener() {
-          @Override
-          public void onClick(View v) {
-
-              fill_alt(AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude);
-
-          }
-      });
-
-    mNumberPickerThus = (NumberPicker) AltDialog.findViewById(R.id.numberPickerThus);
-    mNumberPickerThus.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
-    mNumberPickerThus.setMinValue(0);
-    mNumberPickerThus.setMaxValue(9);
-
-    mNumberPickerHuns = (NumberPicker) AltDialog.findViewById(R.id.numberPickerHuns);
-    mNumberPickerHuns.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
-    mNumberPickerHuns.setMinValue(0);
-    mNumberPickerHuns.setMaxValue(9);
-
-    mNumberPickerTens = (NumberPicker) AltDialog.findViewById(R.id.numberPickerTens);
-    mNumberPickerTens.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
-    mNumberPickerTens.setMinValue(0);
-    mNumberPickerTens.setMaxValue(9);
-
-    mNumberPickerOnes = (NumberPicker) AltDialog.findViewById(R.id.numberPickerOnes);
-    mNumberPickerOnes.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
-    mNumberPickerOnes.setMinValue(0);
-    mNumberPickerOnes.setMaxValue(9);
-
     //Setup left drawer
     mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
@@ -397,8 +282,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
     //Setup Block list
     setup_command_list();
-
-
 
     //Set map zoom level variable (if any);
     if (AppSettings.contains("MapZoomLevel")) {
@@ -858,9 +741,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       //Disable zoom and gestures to lock the image in place
       mMap.getUiSettings().setAllGesturesEnabled(false);
       mMap.getUiSettings().setZoomGesturesEnabled(false);
+      mMap.getUiSettings().setCompassEnabled(false);
 
       //Create the ground overlay
-      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.roomwithhoop);
+      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.fullroomorigin);
       GroundOverlay trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
               .position(labOrigin, (float) 77.15)
@@ -953,6 +837,13 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 adjustDialog.show();
             }
             return true;
+        }
+    });
+
+    mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+        @Override
+        public void onMapClick(LatLng latLng) {
+            Log.d("coord", latLng.toString());
         }
     });
 
@@ -1224,8 +1115,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           //Log.d("PPRZ_info", "Marker found AC= " + AcInd + " wpind:" + MarkerInd);
           NewPosition =  convert_to_google(NewPosition);
           AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpPosition = NewPosition;
-          //show_dialog_menu(String DialogTitle,String WpName,String AirCraftId,String WayPointId,String Lat,String Long,String Alt)
-          show_dialog_menu(DialogTitle, AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpName, AC_DATA.AircraftData[AcInd].AC_Id, MarkerInd, String.valueOf(NewPosition.latitude), String.valueOf(NewPosition.longitude), AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpAltitude);
 
           return;
         }
@@ -1461,25 +1350,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   }
 
-  private void show_dialog_menu(String DialogTitle, String WpName, int AirCraftId, int WayPointId, String Lat, String Long, String Alt) {
-
-    // set dialog components
-    WpDialog.setTitle(DialogTitle);
-
-    DialogTextWpName.setText(WpName);
-
-    DialogAcId = AirCraftId;
-    DialogWpId = WayPointId;
-
-    DialogWpAltitude.setText(Alt);
-
-    DialogTextWpLat.setText(Lat);
-    DialogTextWpLon.setText(Long);
-
-    WpDialog.show();
-
-  }
-
   public void clear_ac_track(View mView) {
 
     if (AC_DATA.SelAcInd < 0) {
@@ -1683,69 +1553,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       return false;
     }
     return true;
-
-  }
-
-  public void show_alt_dialog(View mView) {
-      // set dialog components
-      if (AC_DATA.SelAcInd < 0) {
-          Toast.makeText(getApplicationContext(), "No AC data yet!", Toast.LENGTH_SHORT).show();
-          return;
-      }
-
-
-      fill_alt(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_DlAlt);
-      AltDialog.setTitle("Set Altitude");
-
-
-      AltDialog.show();
-
-  }
-
-  public void fill_alt(String AltStr){
-
-      //Clean AltStr
-      if (AltStr.contains(" ")) {
-          AltStr=AltStr.substring(0,AltStr.indexOf(" "));
-      }
-
-      if (AltStr.length() >=4 ) {
-          mNumberPickerThus.setValue(Integer.parseInt(AltStr.substring(0,1)));
-          mNumberPickerHuns.setValue(Integer.parseInt(AltStr.substring(1,2)));
-          mNumberPickerTens.setValue(Integer.parseInt(AltStr.substring(2,3)));
-          mNumberPickerOnes.setValue(Integer.parseInt(AltStr.substring(3,4)));
-          return;
-      }
-      else {
-          mNumberPickerThus.setValue(0);
-      }
-
-      if (AltStr.length() >=3 ) {
-          mNumberPickerHuns.setValue(Integer.parseInt(AltStr.substring(0,1)));
-          mNumberPickerTens.setValue(Integer.parseInt(AltStr.substring(1,2)));
-          mNumberPickerOnes.setValue(Integer.parseInt(AltStr.substring(2,3)));
-          return;
-      }
-      else {
-          mNumberPickerHuns.setValue(0);
-      }
-
-      if (AltStr.length() >=2 ) {
-          mNumberPickerTens.setValue(Integer.parseInt(AltStr.substring(0,1)));
-          mNumberPickerOnes.setValue(Integer.parseInt(AltStr.substring(1,2)));
-          return;
-      }
-      else {
-          mNumberPickerTens.setValue(0);
-      }
-
-      if (AltStr.length() >=1 ) {
-          mNumberPickerOnes.setValue(Integer.parseInt(AltStr.substring(0,1)));
-          return;
-      }
-      else {
-          mNumberPickerOnes.setValue(0);
-      }
 
   }
 
@@ -1959,8 +1766,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           double oldLat = position.latitude;
           double oldLong = position.longitude;
 
-          double newLat = 5.1875*oldLat - 150.772646;
-          double newLong = 4.9722*oldLong + 313.569393;
+          double newLat = 2.9375*oldLat - 69.76036344;
+          double newLong = 3*oldLong + 157.8820645;
 
           LatLng newPosition = new LatLng(newLat, newLong);
           return newPosition;
@@ -1972,8 +1779,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           double oldLat = position.latitude;
           double oldLong = position.longitude;
 
-          double newLat = (oldLat + 150.772646)/5.1875;
-          double newLong = (oldLong - 313.569393)/4.9722;
+          double newLat = (oldLat + 69.76036344)/2.9375;
+          double newLong = (oldLong - 157.8820645)/3;
 
           LatLng newPosition = new LatLng(newLat, newLong);
           return newPosition;
