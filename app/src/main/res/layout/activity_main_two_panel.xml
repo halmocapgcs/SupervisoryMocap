@@ -21,11 +21,14 @@
                 android:layout_weight="2" />
 
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:text="Launch Inspection Mode"
+            android:textColor="#fff8f9"
+            android:textSize="22sp"
             android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="7dp"
+            android:layout_marginBottom="4dp"
+            android:background="#424242"
             android:id="@+id/InspectionMode"/>
 
         <LinearLayout
@@ -33,146 +36,146 @@
             android:id="@+id/topFlightBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#1b1b1b"
-            android:paddingTop="3dp"
-            android:layout_gravity="top"
-            android:paddingRight="5dp">
-
+            android:background="#424242"
+            android:layout_gravity="top|center">
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_gravity="center_vertical|center_horizontal"
-                android:id="@+id/imageView12"
-                android:src="@drawable/speed" />
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"></View>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="N/A"
-                android:id="@+id/SpeedText"
-                android:layout_gravity="right|top"
-                android:textColor="#fff8f9"
-                android:textStyle="bold"
-                android:textSize="22sp" />
-
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
-
-
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_gravity="center_vertical|center_horizontal"
-                android:id="@+id/imageView11"
-                android:src="@drawable/altitude" />
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"></View>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="N/A m"
-                android:id="@+id/Alt_On_Map"
-                android:layout_gravity="right|top"
-                android:textColor="#fff8f9"
-                android:textStyle="bold"
-                android:textSize="22sp" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="41dp"
+                android:layout_height="41dp"
+                android:layout_marginLeft="10dp"
                 android:layout_gravity="center_vertical|center_horizontal"
                 android:id="@+id/imageView9"
-                android:src="@drawable/battery" />
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"></View>
+                android:src="@drawable/newbattery" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="N/A v"
                 android:id="@+id/Bat_Vol_On_Map"
-                android:layout_gravity="right|top"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="20dp"
+                android:layout_gravity="center"
                 android:textColor="#fff8f9"
                 android:textStyle="bold"
-                android:textSize="22sp" />
+                android:textSize="41sp" />
 
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginBottom="3dp"
-                android:layout_alignParentBottom="true"
-                android:background="#DADADC"
-                android:layout_marginTop="0dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"></View>
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="41dp"
+                android:layout_height="41dp"
                 android:layout_gravity="center_vertical|center_horizontal"
                 android:id="@+id/imageView3"
-                android:src="@drawable/fl_time"
-                android:layout_marginLeft="3dp" />
+                android:src="@drawable/stopwatch"/>
 
-            <View
-                android:layout_width="5dp"
-                android:layout_height="fill_parent"/>
+            <TextView
+                android:id="@+id/Flight_Time_On_Map"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="20dp"
+                android:text="N/A s"
+                android:textColor="#fff8f9"
+                android:textSize="41sp"
+                android:textStyle="bold"/>
+
+            <ImageView
+                android:layout_width="41dp"
+                android:layout_height="41dp"
+                android:layout_gravity="center_vertical|center_horizontal"
+                android:id="@+id/imageView11"
+                android:src="@drawable/altitude_arrow" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="N/A s"
-                android:id="@+id/Flight_Time_On_Map"
-                android:layout_gravity="right|top"
+                android:text="N/A m"
+                android:id="@+id/Alt_On_Map"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_gravity="center"
                 android:textColor="#fff8f9"
                 android:textStyle="bold"
-                android:textSize="22sp" />
+                android:textSize="41sp" />
 
         </LinearLayout>
 
-
-
         <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="240dp"
-                android:layout_height="fill_parent"
-                android:layout_gravity="right|top"
-                android:layout_weight="0">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:id="@+id/buttonList"
+            android:layout_gravity="center_vertical|right">
 
-                <fragment android:name="com.PPRZonDroid.Right_Menu_Class"
-                    android:id="@+id/right_fragment"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="right|top" />
+            <Button
+                android:id="@+id/takeoff"
 
-            </LinearLayout>
+                android:text="Takeoff"
+                android:textColor="#fff8f9"
+                android:textSize="22sp"
+
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginRight="20dp"
+                android:background="@drawable/buttonshape"
+                />
+
+            <Button
+                android:id="@+id/execute_flightplan"
+
+                android:text="Execute Flightplan"
+                android:textColor="#fff8f9"
+                android:textSize="22sp"
+
+                android:layout_width="200dp"
+                android:layout_height="50dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginRight="20dp"
+                android:background="@drawable/buttonshapestart"
+                />
+
+            <Button
+                android:id="@+id/pause_flightplan"
+
+                android:text="Pause Flightplan"
+                android:textColor="#fff8f9"
+                android:textSize="22sp"
+
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginRight="20dp"
+                android:background="@drawable/buttonshapepause"
+                />
+
+            <Button
+                android:id="@+id/land_here"
+
+                android:text="Land Here"
+                android:textColor="#fff8f9"
+                android:textSize="22sp"
+
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginRight="20dp"
+                android:background="@drawable/buttonshape"
+                />
+
+            <Button
+                android:id="@+id/land_at_origin"
+
+                android:text="Land at Origin"
+                android:textColor="#fff8f9"
+                android:textSize="22sp"
+
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:layout_marginRight="20dp"
+                android:background="@drawable/buttonshape"
+                />
+        </LinearLayout>
 
     </FrameLayout>
 

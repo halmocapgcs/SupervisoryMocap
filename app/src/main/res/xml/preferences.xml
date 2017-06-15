@@ -14,11 +14,6 @@
             android:title="Show Flight Info"
             android:summary="Check to display flight information on the left"
             android:defaultValue="true" />
-        <CheckBoxPreference
-            android:key="show_flight_controls"
-            android:title="Show Flight Controls"
-            android:summary="Check to display flight controls on the right"
-            android:defaultValue="true"/>
 
     <CheckBoxPreference
         android:key="use_gps_checkbox"

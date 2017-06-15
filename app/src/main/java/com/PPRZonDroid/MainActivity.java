@@ -83,6 +83,7 @@ import android.preference.PreferenceManager;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -158,7 +159,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
   public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
   public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
-  public static final String SHOW_FLIGHT_CONTROLS = "show_flight_controls";
 
   public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   boolean ShowOnlySelected = true;
@@ -167,8 +167,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   //AP_STATUS
   TextView TextViewFlightTime;
   TextView TextViewBattery;
-  TextView TextViewSpeed;
-  TextView TextViewAirspeed;
 
   //AC Blocks
   ArrayList<BlockModel> BlList = new ArrayList<BlockModel>();
@@ -188,9 +186,11 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   private GoogleMap mMap;
   private TextView MapAlt;
   private TextView MapThrottle;
-  private ImageView Pfd;
 
   private Button Button_ConnectToServer, Button_LaunchInspectionMode;
+  public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere, Button_LandOrigin;
+	public LinearLayout Buttons;
+
   private ToggleButton ChangeVisibleAcButon;
   private DrawerLayout mDrawerLayout;
 
@@ -267,135 +267,150 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   private void set_up_app() {
 
       //Get app settings
-    AppSettings = PreferenceManager.getDefaultSharedPreferences(this);
-    AppSettings.registerOnSharedPreferenceChangeListener(this);
+      AppSettings = PreferenceManager.getDefaultSharedPreferences(this);
+      AppSettings.registerOnSharedPreferenceChangeListener(this);
 
-    AppPassword = (AppSettings.getString("app_password", ""));
+      AppPassword = (AppSettings.getString("app_password", ""));
 
-    DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
+      DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
 
-    //Setup left drawer
-    mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+      //Setup left drawer
+      mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
-    //Setup AC List
-    setup_ac_list();
+      //Setup AC List
+      setup_ac_list();
 
-    //Setup Block list
-    setup_command_list();
+      //Setup Block counter
+	  //setup_counter();
 
-    //Set map zoom level variable (if any);
-    if (AppSettings.contains("MapZoomLevel")) {
-      MapZoomLevel = AppSettings.getFloat("MapZoomLevel", 17.0f);
-    }
+	  //Set map zoom level variable (if any);
+	  if (AppSettings.contains("MapZoomLevel")) {
+		  MapZoomLevel = AppSettings.getFloat("MapZoomLevel", 17.0f);
+	  }
 
-    //continue to bound UI items
-    MapAlt = (TextView) findViewById(R.id.Alt_On_Map);
-    MapThrottle = (TextView) findViewById(R.id.ThrottleText);
-    Pfd = (ImageView) findViewById(R.id.imageView_Pfd);
+	  //continue to bound UI items
+	  MapAlt = (TextView) findViewById(R.id.Alt_On_Map);
 
-    Button_ConnectToServer = (Button) findViewById(R.id.Button_ConnectToServer);
-    setup_map_ifneeded();
+	  Button_ConnectToServer = (Button) findViewById(R.id.Button_ConnectToServer);
+	  setup_map_ifneeded();
 
-    Button_LaunchInspectionMode = (Button) findViewById(R.id.InspectionMode);
-    Button_LaunchInspectionMode.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 9, true);
-            new CountDownTimer(1000, 100) {
-                @Override
-                public void onTick(long l) {
-                }
+	  Button_LaunchInspectionMode = (Button) findViewById(R.id.InspectionMode);
+	  Button_LaunchInspectionMode.setOnClickListener(new View.OnClickListener() {
+		  @Override
+		  public void onClick(View view) {
+			  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 9, true);
+			  new CountDownTimer(1000, 100) {
+				  @Override
+				  public void onTick(long l) {}
 
-                @Override
-                public void onFinish() {
-                    String url = "file:///sdcard/DCIM/video.sdp";
-                    Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
-                    inspect.putExtra("videoUrl", url);
-                    startActivity(inspect);
-                }
-            }.start();
-        }
-    });
+				  @Override
+				  public void onFinish() {
+					  String url = "file:///sdcard/DCIM/video.sdp";
+					  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
+					  inspect.putExtra("videoUrl", url);
+					  startActivity(inspect);
+				  }
+			  }.start();
+		  }
+	  });
 
-    ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
-    ChangeVisibleAcButon.setSelected(false);
+	  Buttons = (LinearLayout) findViewById(R.id.buttonList);
+	  Button_Takeoff = (Button) findViewById(R.id.takeoff);
+	  Button_Execute = (Button) findViewById(R.id.execute_flightplan);
+	  Button_Pause = (Button) findViewById(R.id.pause_flightplan);
+	  Button_LandHere = (Button) findViewById(R.id.land_here);
+	  Button_LandOrigin = (Button) findViewById(R.id.land_at_origin);
 
-    TextViewBattery = (TextView) findViewById(R.id.Bat_Vol_On_Map);
-    TextViewSpeed = (TextView) findViewById(R.id.SpeedText);
-    TextViewFlightTime = (TextView) findViewById(R.id.Flight_Time_On_Map);
+	  Button_Takeoff.setOnTouchListener(new View.OnTouchListener() {
+		  @Override
+		  public boolean onTouch(View v, MotionEvent event) {
+			  clear_buttons();
+			  Button_Takeoff.setSelected(true);
+			  //set_selected_block(0,false);
+			  return false;
+		  }
+	  });
+
+	  Button_Execute.setOnTouchListener(new View.OnTouchListener() {
+		  @Override
+		  public boolean onTouch(View v, MotionEvent event) {
+			  clear_buttons();
+			  Button_Execute.setSelected(true);
+			  //set_selected_block(1,false);
+			  return false;
+		  }
+	  });
+
+	  Button_Pause.setOnTouchListener(new View.OnTouchListener() {
+		  @Override
+		  public boolean onTouch(View v, MotionEvent event) {
+			  clear_buttons();
+			  Button_Pause.setSelected(true);
+			  //set_selected_block(2, false);
+			  return false;
+		  }
+	  });
+
+	  Button_LandHere.setOnTouchListener(new View.OnTouchListener() {
+		  @Override
+		  public boolean onTouch(View v, MotionEvent event) {
+			  clear_buttons();
+			  Button_LandHere.setSelected(true);
+			  //set_selected_block(3,false);
+			  return false;
+		  }
+	  });
+
+	  Button_LandOrigin.setOnTouchListener(new View.OnTouchListener() {
+		  @Override
+		  public boolean onTouch(View v, MotionEvent event) {
+			  clear_buttons();
+			  Button_LandOrigin.setSelected(true);
+			  //set_selected_block(4,false);
+			  return false;
+		  }
+	  });
+
+	  ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
+	  ChangeVisibleAcButon.setSelected(false);
+
+	  TextViewBattery = (TextView) findViewById(R.id.Bat_Vol_On_Map);
+	  TextViewFlightTime = (TextView) findViewById(R.id.Flight_Time_On_Map);
 
   }
 
-  private  void setup_command_list() {
 
-      //Block Listview
-      setup_counter();
-
-      mBlListAdapter = new BlockListAdapter(this, generateDataBl());
-
-      //
-      BlListView = (ListView) findViewById(R.id.BlocksList);
-
-      View FlightControls = getLayoutInflater().inflate(R.layout.flight_controls, null);
-      BlListView.addHeaderView(FlightControls);
-
-
-      BlListView.setAdapter(mBlListAdapter);
-      BlListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-          public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-              BL_CountDown.cancel();
-              BL_CountDownTimerValue=BL_CountDownTimerDuration;
-              mBlListAdapter.ClickedInd = position-1;
-              JumpToBlock= position-1;
-
-              //this if statement is used to prevent the timer from activating for the pause block
-              if(JumpToBlock == 2){
-                  mBlListAdapter.ClickedInd = -1;
-                  set_selected_block(JumpToBlock, false);
-              }
-              else BL_CountDown.start();
-
-              mBlListAdapter.notifyDataSetChanged();
-
-
-          }
-      });
-  }
-
-  //primes countdown timer
-  private void setup_counter() {
-      //Get timeout from appsettings
-      BL_CountDownTimerDuration = Integer.parseInt(AppSettings.getString("block_change_timeout", "3")) *300;
-      BL_CountDownTimerValue =BL_CountDownTimerDuration;
-      //Setup timer for progressbar of clicked block
-      BL_CountDown = new CountDownTimer(BL_CountDownTimerDuration, 100 ) {
-          @Override
-          public void onTick(long l) {
-
-              if (BL_CountDownTimerDuration>0) {
-                  BL_CountDownTimerValue= BL_CountDownTimerValue - 100;
-                  mBlListAdapter.BlProgress.setProgress(((BL_CountDownTimerValue*100) /BL_CountDownTimerDuration)) ;
-                  //if (DEBUG) Log.d("PPRZ_info", "Counter value: " + process_val );
-              }
-          }
-
-          @Override
-          public void onFinish() {
-              if (BL_CountDownTimerDuration>0) {
-
-                  BL_CountDownTimerValue= BL_CountDownTimerValue - 100;
-                  mBlListAdapter.BlProgress.setProgress(((BL_CountDownTimerValue*100) /BL_CountDownTimerDuration)) ;
-                  BL_CountDownTimerValue = BL_CountDownTimerDuration;
-                  mBlListAdapter.ClickedInd = -1;
-                  set_selected_block(JumpToBlock, false);
-                  mBlListAdapter.notifyDataSetChanged();
-
-              }
-          }
-
-      };
-  }
+//  //primes countdown timer
+//  private void setup_counter() {
+//      //Get timeout from appsettings
+//      BL_CountDownTimerDuration = Integer.parseInt(AppSettings.getString("block_change_timeout", "3")) *300;
+//      BL_CountDownTimerValue =BL_CountDownTimerDuration;
+//
+//      //Setup timer for progressbar of clicked block
+//      BL_CountDown = new CountDownTimer(BL_CountDownTimerDuration, 100 ) {
+//          @Override
+//          public void onTick(long l) {
+//
+//              if (BL_CountDownTimerDuration>0) {
+//                  BL_CountDownTimerValue= BL_CountDownTimerValue - 100;
+//                  mBlListAdapter.BlProgress.setProgress(((BL_CountDownTimerValue*100) /BL_CountDownTimerDuration)) ;
+//                  //if (DEBUG) Log.d("PPRZ_info", "Counter value: " + process_val );
+//              }
+//          }
+//
+//          @Override
+//          public void onFinish() {
+//              if (BL_CountDownTimerDuration>0) {
+//
+//                  BL_CountDownTimerValue= BL_CountDownTimerValue - 100;
+//                  mBlListAdapter.BlProgress.setProgress(((BL_CountDownTimerValue*100) /BL_CountDownTimerDuration)) ;
+//                  BL_CountDownTimerValue = BL_CountDownTimerDuration;
+//                  set_selected_block(JumpToBlock, false);
+//              }
+//          }
+//
+//      };
+//  }
 
   //largely unnecessary, this was to allow multiple drones to load at the same time, left menu
   private void setup_ac_list() {
@@ -514,10 +529,14 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         //AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock = BlocId;
 
         if (ReqFromServer){
+			//if in standby, takeoff is finished so clear the button
+			if(BlocId == 4){
+				Button_Takeoff.setSelected(false);
+			}
 
             //this checks to see if the server is at the "Arrived" block, in which case we shift back
             //to the "Next Waypoint" block which is handled locally rather than with the reqfromserver tag
-            if(BlocId == 7){
+            else if(BlocId == 7){
 
             /* current implementation removes the connecting polyline from previous wp
              *  as well as that previous wp */
@@ -552,6 +571,11 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 pathPoints.addFirst(AC_DATA.AircraftData[0].AC_Carrot_Marker.getPosition());
                 adjust_marker_lines();
             }
+
+            //if landed, clear button selections
+            else if(BlocId == 12){
+				clear_buttons();
+			}
         }
         else if(BlocId == 0){
             //start engine
@@ -623,16 +647,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
     refresh_block_list();
     set_marker_visibility();
-
-    //set airspeed visibility
-    if (AC_DATA.AircraftData[AC_DATA.SelAcInd].AirspeedEnabled) {
-        //TextViewAirspeed.setVisibility(View.VISIBLE);
-        //TextViewAirspeed.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].AirSpeed + " m/s");
-    }
-      else
-    {
-        //TextViewAirspeed.setVisibility(View.INVISIBLE);
-    }
 
     for (int i = 0; i <= AC_DATA.IndexEnd; i++) {
       //Is AC ready to show on ui?
@@ -728,8 +742,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       //Disable zoom and gestures to lock the image in place
       mMap.getUiSettings().setAllGesturesEnabled(false);
       mMap.getUiSettings().setZoomGesturesEnabled(false);
+      mMap.getUiSettings().setZoomControlsEnabled(false);
       mMap.getUiSettings().setCompassEnabled(false);
       mMap.getUiSettings().setTiltGesturesEnabled(false);
+	  mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
       //Set zoom level and the position of the lab
       LatLng labOrigin = new LatLng(36.005417, -78.940984);
@@ -1124,6 +1140,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //addMarkersToMap();
   }
 
+  //for the three below functions, we are not using the action bar. This allows a settings tab
+  //if we were to have one
   @Override
   public void setTitle(CharSequence title) {
     mTitle = title;
@@ -1250,7 +1268,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   @Override
   public void onSharedPreferenceChanged(SharedPreferences AppSettings, String key) {
       LinearLayout topbar = (LinearLayout) findViewById(R.id.topFlightBar);
-      ImageView flightcontrol = (ImageView) findViewById(R.id.imageView_Pfd);
 
     //Changed settings will be applied on nex iteration of async task
 
@@ -1294,7 +1311,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
     if (key.equals(BLOCK_C_TIMEOUT)) {
       BL_CountDownTimerDuration = Integer.parseInt(AppSettings.getString(BLOCK_C_TIMEOUT, "3"))*1000;
-      setup_counter();
+      //setup_counter();
       if (DEBUG) Log.d("PPRZ_info", "Clock change timeout changed : " + AppSettings.getString(BLOCK_C_TIMEOUT , ""));
     }
 
@@ -1315,15 +1332,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
               topbar.setVisibility(View.INVISIBLE);
           }
 
-      }
-      if (key.equals(SHOW_FLIGHT_CONTROLS)){
-          ShowFlightControls = AppSettings.getBoolean((SHOW_FLIGHT_CONTROLS), true);
-          if (ShowFlightControls) {
-              flightcontrol.setVisibility(View.VISIBLE);
-          }
-          else{
-              flightcontrol.setVisibility(View.INVISIBLE);
-          }
       }
 
   }
@@ -1347,27 +1355,27 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   }
 
-    public void confirm_bl_change(View mView) {
-        //Cancel timer & clear BlockList
-        BL_CountDown.cancel();
-        BL_CountDownTimerValue=BL_CountDownTimerDuration;
-        mBlListAdapter.ClickedInd=-1;
-        mBlListAdapter.notifyDataSetChanged();
-        //Notify app_server for changes
-        set_selected_block(JumpToBlock,false);
+//    public void confirm_bl_change(View mView) {
+//        //Cancel timer & clear BlockList
+//        BL_CountDown.cancel();
+//        BL_CountDownTimerValue=BL_CountDownTimerDuration;
+//        mBlListAdapter.ClickedInd=-1;
+//        mBlListAdapter.notifyDataSetChanged();
+//        //Notify app_server for changes
+//        set_selected_block(JumpToBlock,false);
+//
+//    }
 
-    }
-
-    public void cancel_bl_change(View mView) {
-        //Cancel timer & clear BlockList
-        BL_CountDown.cancel();
-        BL_CountDownTimerValue=BL_CountDownTimerDuration;
-        mBlListAdapter.ClickedInd=-1;
-        mBlListAdapter.notifyDataSetChanged();
-        Toast.makeText(getApplicationContext(), "Block change cancelled.", Toast.LENGTH_SHORT).show();
-
-
-    }
+//    public void cancel_bl_change(View mView) {
+//        //Cancel timer & clear BlockList
+//        BL_CountDown.cancel();
+//        BL_CountDownTimerValue=BL_CountDownTimerDuration;
+//        mBlListAdapter.ClickedInd=-1;
+//        mBlListAdapter.notifyDataSetChanged();
+//        Toast.makeText(getApplicationContext(), "Block change cancelled.", Toast.LENGTH_SHORT).show();
+//
+//
+//    }
 
   //Function called when toggleButton_ConnectToServer (in left fragment) is pressed
   public void connect_to_server(View mView) {
@@ -1400,7 +1408,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           // User pressed YES button. Send kill string
           send_to_server("dl DL_SETTING " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_KillID + " 1.000000", true);
           Toast.makeText(getApplicationContext(), AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Name + " ,mayday, kill mode!", Toast.LENGTH_SHORT).show();
-          MapThrottle.setTextColor(Color.RED);
         }
       });
 
@@ -1423,7 +1430,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //dl DL_SETTING 5 9 0.000000
     if (AC_DATA.SelAcInd >= 0) {
       send_to_server("dl DL_SETTING " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_KillID + " 0.000000", true);
-      MapThrottle.setTextColor(Color.WHITE);
     } else {
       Toast.makeText(getApplicationContext(), "No AC data yet!", Toast.LENGTH_SHORT).show();
     }
@@ -1606,7 +1612,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged) {
           TextViewFlightTime.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].FlightTime);
           TextViewBattery.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Battery + "v");
-          TextViewSpeed.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Speed + "m/s");
           AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged = false;
         }
 
@@ -1646,27 +1651,13 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         //For a smooth gui we need refresh only changed gui controls
         refresh_markers();
 
-        //Check  engine Status
-        if (AC_DATA.AircraftData[AC_DATA.SelAcInd].EngineStatusChanged) {
-          MapThrottle.setText("%" + AC_DATA.AircraftData[AC_DATA.SelAcInd].Throttle);
-          AC_DATA.AircraftData[AC_DATA.SelAcInd].EngineStatusChanged = false;
-        }
-
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude_Changed) {
-          MapAlt.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude);
+          MapAlt.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].RawAltitude);
 
             AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude_Changed = false;
 
-            Pfd.setImageBitmap(AC_DATA.AcPfd);
-
         }
 
-
-        if (AC_DATA.AircraftData[AC_DATA.SelAcInd].AirspeedEnabled && AC_DATA.AircraftData[AC_DATA.SelAcInd].AirspeedChanged) {
-          //Airspeed Enabled
-          TextViewAirspeed.setVisibility(View.VISIBLE);
-          TextViewAirspeed.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].AirSpeed + " m/s");
-        }
 
         //No error handling right now.
         Button_ConnectToServer.setText("Connected!");
@@ -1720,33 +1711,42 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 * END OF UI FUNCTIONS >>>>>> END OF UI FUNCTIONS >>>>>> END OF UI FUNCTIONS >>>>>> END OF UI FUNCTIONS >>>>>>
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
-    //Here are our new methods
+//Here are our new methods
 
-      //this method converts the google latitudes to the corresponding points on the transposed image
-      //use this method to draw the markers in the right spots
-      public LatLng convert_to_lab(LatLng position){
-          double oldLat = position.latitude;
-          double oldLong = position.longitude;
+	//clears all buttons so only one will be shown as selected at any moment
+	public void clear_buttons(){
+		Button_Takeoff.setSelected(false);
+		Button_Execute.setSelected(false);
+		Button_Pause.setSelected(false);
+		Button_LandHere.setSelected(false);
+		Button_LandOrigin.setSelected(false);
+	}
 
-          double newLat = 2.9375*oldLat - 69.76036344;
-          double newLong = 3*oldLong + 157.8820645;
+	//this method converts the google latitudes to the corresponding points on the transposed image
+	//use this method to draw the markers in the right spots
+	public LatLng convert_to_lab(LatLng position){
+		double oldLat = position.latitude;
+		double oldLong = position.longitude;
 
-          LatLng newPosition = new LatLng(newLat, newLong);
-          return newPosition;
-      }
+		double newLat = 2.9375*oldLat - 69.76036344;
+		double newLong = 3*oldLong + 157.8820645;
 
-      //this method converts the fake latitudes back to the actual google values
-      //use this for any information that paparazzi needs about where to actually send the drone
-      public LatLng convert_to_google(LatLng position){
-          double oldLat = position.latitude;
-          double oldLong = position.longitude;
+		LatLng newPosition = new LatLng(newLat, newLong);
+		return newPosition;
+	}
 
-          double newLat = (oldLat + 69.76036344)/2.9375;
-          double newLong = (oldLong - 157.8820645)/3;
+	//this method converts the fake latitudes back to the actual google values
+	//use this for any information that paparazzi needs about where to actually send the drone
+	public LatLng convert_to_google(LatLng position){
+		double oldLat = position.latitude;
+		double oldLong = position.longitude;
 
-          LatLng newPosition = new LatLng(newLat, newLong);
-          return newPosition;
-      }
+		double newLat = (oldLat + 69.76036344)/2.9375;
+		double newLong = (oldLong - 157.8820645)/3;
+
+		LatLng newPosition = new LatLng(newLat, newLong);
+		return newPosition;
+	}
 
     //fix the icons every time a waypoint is either reached or removed, currently unused in
     //experimental design

@@ -128,7 +128,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/imageView11"
-                android:src="@drawable/battery" />
+                android:src="@drawable/newbattery" />
 
             <View
                 android:layout_width="5dp"
