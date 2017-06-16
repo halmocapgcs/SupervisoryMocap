@@ -326,7 +326,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
 			  Button_Takeoff.setSelected(true);
-			  //set_selected_block(0,false);
+			  set_selected_block(0,false);
 			  return false;
 		  }
 	  });
@@ -356,7 +356,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
 			  Button_LandHere.setSelected(true);
-			  //set_selected_block(3,false);
+			  set_selected_block(3,false);
 			  return false;
 		  }
 	  });
@@ -366,7 +366,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
 			  Button_LandOrigin.setSelected(true);
-			  //set_selected_block(4,false);
+			  set_selected_block(4,false);
 			  return false;
 		  }
 	  });
@@ -645,7 +645,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //Set Title;
     setTitle(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Name);
 
-    refresh_block_list();
+    //refresh_block_list();
     set_marker_visibility();
 
     for (int i = 0; i <= AC_DATA.IndexEnd; i++) {
@@ -758,7 +758,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       mMap.moveCamera(CameraUpdateFactory.newCameraPosition(rotated));
 
       //Create the ground overlay
-      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.fullroom);
+      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.disasterzone);
       GroundOverlay trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
               .position(labOrigin, (float) 77.15)   //note if you change size of map you need to redo this val too
@@ -1144,31 +1144,31 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   //if we were to have one
   @Override
   public void setTitle(CharSequence title) {
-    mTitle = title;
-    getActionBar().setTitle(mTitle);
+//    mTitle = title;
+//    getActionBar().setTitle(mTitle);
   }
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     // Inflate the menu; this adds items to the action bar if it is present.
-    getMenuInflater().inflate(R.menu.main, menu);
+    //getMenuInflater().inflate(R.menu.main, menu);
     return true;
   }
 
-  @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    // Handle action bar item clicks here. The action bar will
-    // automatically handle clicks on the Home/Up button, so long
-    // as you specify a parent activity in AndroidManifest.xml.
-    switch (item.getItemId()) {
-      case R.id.action_settings:
-
-        Intent intent = new Intent(this, SettingsActivity.class);
-        startActivity(intent);
-        return true;
-    }
-    return super.onOptionsItemSelected(item);
-  }
+//  @Override
+//  public boolean onOptionsItemSelected(MenuItem item) {
+//    // Handle action bar item clicks here. The action bar will
+//    // automatically handle clicks on the Home/Up button, so long
+//    // as you specify a parent activity in AndroidManifest.xml.
+//    switch (item.getItemId()) {
+//      case R.id.action_settings:
+//
+//        Intent intent = new Intent(this, SettingsActivity.class);
+//        startActivity(intent);
+//        return true;
+//    }
+//    return super.onOptionsItemSelected(item);
+//  }
 
   @Override
   protected void onStop() {
@@ -1610,7 +1610,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged) {
-          TextViewFlightTime.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].FlightTime);
+          TextViewFlightTime.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].FlightTime + " s");
           TextViewBattery.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Battery + "v");
           AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged = false;
         }
@@ -1652,7 +1652,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         refresh_markers();
 
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude_Changed) {
-          MapAlt.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].RawAltitude);
+          MapAlt.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude);
 
             AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude_Changed = false;
 
