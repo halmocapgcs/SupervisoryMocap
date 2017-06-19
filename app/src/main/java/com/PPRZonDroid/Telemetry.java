@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Telemetry {
 
-  boolean DEBUG;
+  boolean DEBUG = false;
 
   //added by Ben Welton
   boolean inspecting = false;
@@ -131,14 +131,13 @@ public class Telemetry {
   public void read_udp_data(DatagramSocket socket) {
 
         try {
-
             socket.receive(packet);
             String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength());
             //!!TODO line below is for compatibility. Will be
             //String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength()-1);
             if ((String2parse != null) && (!String2parse.equals(String2parse_buf))) {
                 String2parse_buf = String2parse;
-                //if (DEBUG) Log.d("PPRZ_exception", "Udp Package Received:" + String2parse);
+                if (DEBUG) Log.d("PPRZ_exception", "Udp Package Received:" + String2parse);
                 parse_udp_string(String2parse);
                 String2parse=null;
             }

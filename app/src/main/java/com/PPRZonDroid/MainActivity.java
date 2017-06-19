@@ -71,7 +71,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
@@ -147,7 +151,7 @@ import java.net.DatagramSocket;
 public class MainActivity extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
   //TODO ! FLAG MUST BE 'FALSE' FOR PLAY STORE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  boolean DEBUG=false;
+  boolean DEBUG=true;
 
   //Application Settings
   public static final String SERVER_IP_ADDRESS = "server_ip_adress_text";
@@ -185,7 +189,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   //UI components (needs to be bound onCreate
   private GoogleMap mMap;
   private TextView MapAlt;
-  private TextView MapThrottle;
+  private ImageView mImageView;
 
   private Button Button_ConnectToServer, Button_LaunchInspectionMode;
   public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere, Button_LandOrigin;
@@ -224,6 +228,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   private CountDownTimer BL_CountDown;
   private int BL_CountDownTimerValue;
   private int JumpToBlock;
+	public int percent = 100;
   private int BL_CountDownTimerDuration;
 
   private ArrayList<Model> generateDataAc() {
@@ -247,7 +252,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     AC_DATA = new Telemetry();
 
     //Read & setup Telemetry class
-    AC_DATA.ServerIp = AppSettings.getString(SERVER_IP_ADDRESS, getString(R.string.pref_ip_address_default));
+    AC_DATA.ServerIp = "192.168.50.10";
     AC_DATA.ServerTcpPort = Integer.parseInt(AppSettings.getString(SERVER_PORT_ADDRESS, getString(R.string.pref_port_number_default)));
     AC_DATA.UdpListenPort = Integer.parseInt(AppSettings.getString(LOCAL_PORT_ADDRESS, getString(R.string.pref_local_port_number_default)));
     AC_DATA.AirSpeedMinSetting = parseDouble(AppSettings.getString(MIN_AIRSPEED, "10"));
@@ -376,6 +381,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 	  TextViewBattery = (TextView) findViewById(R.id.Bat_Vol_On_Map);
 	  TextViewFlightTime = (TextView) findViewById(R.id.Flight_Time_On_Map);
+	  mImageView = (ImageView) findViewById(R.id.batteryImageView);
 
   }
 
@@ -734,7 +740,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       GoogleMapOptions mMapOptions = new GoogleMapOptions();
 
       //Read device settings for Gps usage.
-      mMap.setMyLocationEnabled(AppSettings.getBoolean("use_gps_checkbox", true));
+      mMap.setMyLocationEnabled(false);
 
       //Set map type
       mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
@@ -1601,6 +1607,19 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
       try {
 
+		  Bitmap bitmap = Bitmap.createBitmap(
+				  55, // Width
+				  110, // Height
+				  Bitmap.Config.ARGB_8888 // Config
+		  );
+		  Canvas canvas = new Canvas(bitmap);
+		  //canvas.drawColor(Color.BLACK);
+		  Paint paint = new Paint();
+		  paint.setStyle(Paint.Style.FILL);
+		  paint.setAntiAlias(true);
+		  double battery_double = Double.parseDouble(AC_DATA.AircraftData[AC_DATA.SelAcInd].Battery);
+		  double battery_width = (12.5 - battery_double) / (.027);
+		  int val = (int) battery_width;
 
 
         if (AC_DATA.SelAcInd < 0) {
@@ -1610,8 +1629,45 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged) {
+			int newPercent = (int) (((battery_double - 9.8)/(11.0-9.8)) * 100);
+			if(newPercent > 100){
+				newPercent = 100;
+				TextViewBattery.setText("" + newPercent + " %");
+			}
+			if(newPercent < percent) {
+				TextViewBattery.setText("" + newPercent + " %");
+				percent = newPercent;
+			}
+
+
+			if ( battery_double > 10.4) {
+				paint.setColor(Color.parseColor("#18A347"));
+			}
+			if (10.4 >= battery_double && battery_double >= 10.1) {
+				paint.setARGB(219, 180, 36, 1);
+
+			}
+			if (10.1 > battery_double && battery_double > 9.8) {
+				paint.setColor(Color.parseColor("#B0090E"));
+				Toast.makeText(getApplicationContext(), "Warning: Low Battery", Toast.LENGTH_SHORT);
+			}
+			if (battery_double <= 9.8) {
+				Toast.makeText(getApplicationContext(), "No battery remaining. Land immediately", Toast.LENGTH_SHORT);
+			}
+			int padding = 10;
+			Rect rectangle = new Rect(
+					padding, // Left
+					100 - (int) (90*((double) percent *.01)), // Top
+					canvas.getWidth() - padding , // Right
+					canvas.getHeight() - padding // Bottom
+			);
+
+			canvas.drawRect(rectangle, paint);
+			mImageView.setImageBitmap(bitmap);
+			mImageView.setBackgroundResource(R.drawable.battery_image_empty);
+
+
           TextViewFlightTime.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].FlightTime + " s");
-          TextViewBattery.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Battery + "v");
           AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged = false;
         }
 
