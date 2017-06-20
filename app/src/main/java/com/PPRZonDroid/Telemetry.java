@@ -184,7 +184,10 @@ public class Telemetry {
         Minutes = TimeUnit.SECONDS.toMinutes(FlightTime);
         FlightTime = FlightTime - TimeUnit.MINUTES.toSeconds(Minutes);
 
-        AircraftData[AcIndex].FlightTime = Long.toString(Hours) + ":" + Long.toString(Minutes) + ":" + Long.toString(FlightTime);
+        AircraftData[AcIndex].FlightTime = Long.toString(Minutes) + ":";
+		if(Minutes < 10) AircraftData[AcIndex].FlightTime = "0" + AircraftData[AcIndex].FlightTime;
+		if(FlightTime < 10) AircraftData[AcIndex].FlightTime = AircraftData[AcIndex].FlightTime + "0" + Long.toString(FlightTime);
+		else AircraftData[AcIndex].FlightTime = AircraftData[AcIndex].FlightTime + Long.toString(FlightTime);
 
         AircraftData[AcIndex].ApStatusChanged = true;
 
@@ -277,11 +280,11 @@ public class Telemetry {
 		  AircraftData[AcIndex].Heading = ParsedData[5];
 		  AircraftData[AcIndex].Position = new LatLng(Double.parseDouble(ParsedData[6]), Double.parseDouble(ParsedData[7]));
 		  AircraftData[AcIndex].Speed = ParsedData[8].substring(0, (ParsedData[8].indexOf(".") + 2));
-		  AircraftData[AcIndex].Altitude = ParsedData[10].substring(0, ParsedData[10].indexOf(".") + 1);
+		  AircraftData[AcIndex].Altitude = ParsedData[10].substring(0, ParsedData[10].indexOf(".") + 2);
 		  AircraftData[AcIndex].RawAltitude = ParsedData[10];
 		  AircraftData[AcIndex].AGL = ParsedData[12].substring(0, ParsedData[12].indexOf("."));
 
-		  if(Integer.parseInt(AircraftData[AcIndex].Altitude) <= 0) AircraftData[AcIndex].Altitude = "0.0";
+		  if(Float.parseFloat(AircraftData[AcIndex].Altitude) <= 0) AircraftData[AcIndex].Altitude = "0.0";
 		  AircraftData[AcIndex].Altitude = AircraftData[AcIndex].Altitude + " m";
 
         String BufAirspeed= ParsedData[15].substring(0, ParsedData[15].indexOf(".") + 1);
@@ -301,14 +304,14 @@ public class Telemetry {
           AircraftData[AcIndex].AC_Path.add(AircraftData[AcIndex].Position);
 
         if (AircraftData[AcIndex].AC_Enabled) {
-          AircraftData[AcIndex].AC_Position_Changed = true;
-          //TODO all ui flags need to check this
-          if (AcIndex == SelAcInd) {
-            ViewChanged = true;
-            AttitudeChanged = true;
-            AircraftData[AcIndex].Altitude_Changed = true;
-            draw_pfd(AcIndex);
-          }
+			AircraftData[AcIndex].AC_Position_Changed = true;
+			AircraftData[AcIndex].Altitude_Changed = true;
+			ViewChanged = true;
+			//TODO all ui flags need to check this
+			if (AcIndex == SelAcInd) {
+            	AttitudeChanged = true;
+				draw_pfd(AcIndex);
+          	}
         }
         return;
       } else {

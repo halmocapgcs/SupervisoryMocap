@@ -145,58 +145,64 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
 import java.net.DatagramSocket;
 
 
 public class MainActivity extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-  //TODO ! FLAG MUST BE 'FALSE' FOR PLAY STORE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  boolean DEBUG=true;
+  	//TODO ! FLAG MUST BE 'FALSE' FOR PLAY STORE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  	boolean DEBUG=false;
+	public final int InspectionPosition = 1;
 
-  //Application Settings
-  public static final String SERVER_IP_ADDRESS = "server_ip_adress_text";
-  public static final String SERVER_PORT_ADDRESS = "server_port_number_text";
-  public static final String LOCAL_PORT_ADDRESS = "local_port_number_text";
-  public static final String MIN_AIRSPEED = "minimum_air_speed";
-  public static final String USE_GPS = "use_gps_checkbox";
-  public static final String Control_Pass = "app_password";
-  public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
-  public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
-  public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
+  	//Application Settings
+  	public static final String SERVER_IP_ADDRESS = "server_ip_adress_text";
+  	public static final String SERVER_PORT_ADDRESS = "server_port_number_text";
+  	public static final String LOCAL_PORT_ADDRESS = "local_port_number_text";
+  	public static final String MIN_AIRSPEED = "minimum_air_speed";
+  	public static final String USE_GPS = "use_gps_checkbox";
+  	public static final String Control_Pass = "app_password";
+  	public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
+  	public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
+  	public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
 
-  public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
-  boolean ShowOnlySelected = true;
-  String AppPassword;
+	public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
+  	boolean ShowOnlySelected = true;
+  	String AppPassword;
 
-  //AP_STATUS
-  TextView TextViewFlightTime;
-  TextView TextViewBattery;
+  	//AP_STATUS
+  	TextView TextViewFlightTime;
+  	TextView TextViewBattery;
 
-  //AC Blocks
-  ArrayList<BlockModel> BlList = new ArrayList<BlockModel>();
-  BlockListAdapter mBlListAdapter;
-  ListView BlListView;
-  SharedPreferences AppSettings;                  //App Settings Data
-  Float MapZoomLevel = 14.0f;
+  	//AC Blocks
+  	ArrayList<BlockModel> BlList = new ArrayList<BlockModel>();
+  	BlockListAdapter mBlListAdapter;
+  	ListView BlListView;
+  	SharedPreferences AppSettings;                  //App Settings Data
+  	Float MapZoomLevel = 14.0f;
 
-  //Ac Names
-  ArrayList<Model> AcList = new ArrayList<Model>();
-  AcListAdapter mAcListAdapter;
-  ListView AcListView;
-  boolean TcpSettingsChanged;
-  boolean UdpSettingsChanged;
+  	//Ac Names
+  	ArrayList<Model> AcList = new ArrayList<Model>();
+  	AcListAdapter mAcListAdapter;
+  	ListView AcListView;
+  	boolean TcpSettingsChanged;
+  	boolean UdpSettingsChanged;
 
-  //UI components (needs to be bound onCreate
-  private GoogleMap mMap;
-  private TextView MapAlt;
-  private ImageView mImageView;
+  	//UI components (needs to be bound onCreate
+  	private GoogleMap mMap;
+  	private TextView MapAlt;
+  	private ImageView mImageView;
 
-  private Button Button_ConnectToServer, Button_LaunchInspectionMode;
-  public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere, Button_LandOrigin;
+	private Button Button_ConnectToServer, Button_LaunchInspectionMode;
+  	public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere, Button_LandOrigin;
 	public LinearLayout Buttons;
 
-  private ToggleButton ChangeVisibleAcButon;
-  private DrawerLayout mDrawerLayout;
+  	private ToggleButton ChangeVisibleAcButon;
+  	private DrawerLayout mDrawerLayout;
+
+	boolean lowBatteryUnread = true;
+	boolean emptyBatteryUnread = true;
 
   //Position descriptions >> in future this needs to be an array or struct
   private LatLng AC_Pos = new LatLng(43.563958, 1.481391);
@@ -223,7 +229,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   private boolean DisableScreenDim;
   private boolean DisplayFlightInfo;
-  private boolean ShowFlightControls;
+
 
   private CountDownTimer BL_CountDown;
   private int BL_CountDownTimerValue;
@@ -275,7 +281,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       AppSettings = PreferenceManager.getDefaultSharedPreferences(this);
       AppSettings.registerOnSharedPreferenceChangeListener(this);
 
-      AppPassword = (AppSettings.getString("app_password", ""));
+      AppPassword = "1234";
 
       DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
 
@@ -313,7 +319,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 					  String url = "file:///sdcard/DCIM/video.sdp";
 					  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
 					  inspect.putExtra("videoUrl", url);
-					  startActivity(inspect);
+					  startActivityForResult(inspect, InspectionPosition);
 				  }
 			  }.start();
 		  }
@@ -330,8 +336,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  Button_Takeoff.setSelected(true);
 			  set_selected_block(0,false);
+			  Button_Takeoff.setSelected(true);
 			  return false;
 		  }
 	  });
@@ -341,7 +347,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
 			  Button_Execute.setSelected(true);
-			  //set_selected_block(1,false);
+			  set_selected_block(1,false);
 			  return false;
 		  }
 	  });
@@ -351,7 +357,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
 			  Button_Pause.setSelected(true);
-			  //set_selected_block(2, false);
+			  set_selected_block(2, false);
 			  return false;
 		  }
 	  });
@@ -360,8 +366,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  Button_LandHere.setSelected(true);
 			  set_selected_block(3,false);
+			  Button_LandHere.setSelected(true);
 			  return false;
 		  }
 	  });
@@ -370,8 +376,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  Button_LandOrigin.setSelected(true);
 			  set_selected_block(4,false);
+			  Button_LandOrigin.setSelected(true);
 			  return false;
 		  }
 	  });
@@ -1607,21 +1613,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
       try {
 
-		  Bitmap bitmap = Bitmap.createBitmap(
-				  55, // Width
-				  110, // Height
-				  Bitmap.Config.ARGB_8888 // Config
-		  );
-		  Canvas canvas = new Canvas(bitmap);
-		  //canvas.drawColor(Color.BLACK);
-		  Paint paint = new Paint();
-		  paint.setStyle(Paint.Style.FILL);
-		  paint.setAntiAlias(true);
-		  double battery_double = Double.parseDouble(AC_DATA.AircraftData[AC_DATA.SelAcInd].Battery);
-		  double battery_width = (12.5 - battery_double) / (.027);
-		  int val = (int) battery_width;
-
-
         if (AC_DATA.SelAcInd < 0) {
           //no selected aircrafts yet! Return.
           return;
@@ -1629,10 +1620,25 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].ApStatusChanged) {
-			int newPercent = (int) (((battery_double - 9.8)/(11.0-9.8)) * 100);
-			if(newPercent > 100){
-				newPercent = 100;
-				TextViewBattery.setText("" + newPercent + " %");
+
+			Bitmap bitmap = Bitmap.createBitmap(
+					55, // Width
+					110, // Height
+					Bitmap.Config.ARGB_8888 // Config
+			);
+			Canvas canvas = new Canvas(bitmap);
+			//canvas.drawColor(Color.BLACK);
+			Paint paint = new Paint();
+			paint.setStyle(Paint.Style.FILL);
+			paint.setAntiAlias(true);
+			double battery_double = Double.parseDouble(AC_DATA.AircraftData[AC_DATA.SelAcInd].Battery);
+			double battery_width = (12.5 - battery_double) / (.027);
+			int val = (int) battery_width;
+
+
+			int newPercent = (int) (((battery_double - 9.8)/(10.9-9.8)) * 100);
+			if(newPercent >= 100 && percent >= 100){
+				TextViewBattery.setText("" + percent + " %");
 			}
 			if(newPercent < percent) {
 				TextViewBattery.setText("" + newPercent + " %");
@@ -1640,19 +1646,25 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 			}
 
 
-			if ( battery_double > 10.4) {
+			if (percent> 66) {
 				paint.setColor(Color.parseColor("#18A347"));
 			}
-			if (10.4 >= battery_double && battery_double >= 10.1) {
-				paint.setARGB(219, 180, 36, 1);
+			if (66 >= percent && percent >= 33) {
+				paint.setColor(Color.YELLOW);
 
 			}
-			if (10.1 > battery_double && battery_double > 9.8) {
+			if (33 > percent && percent > 10) {
 				paint.setColor(Color.parseColor("#B0090E"));
-				Toast.makeText(getApplicationContext(), "Warning: Low Battery", Toast.LENGTH_SHORT);
+				if(lowBatteryUnread) {
+					Toast.makeText(getApplicationContext(), "Warning: Low Battery", Toast.LENGTH_SHORT).show();
+					lowBatteryUnread = false;
+				}
 			}
-			if (battery_double <= 9.8) {
-				Toast.makeText(getApplicationContext(), "No battery remaining. Land immediately", Toast.LENGTH_SHORT);
+			if (percent <= 10) {
+				if(emptyBatteryUnread) {
+					Toast.makeText(getApplicationContext(), "No battery remaining. Land immediately", Toast.LENGTH_SHORT).show();
+					emptyBatteryUnread = false;
+				}
 			}
 			int padding = 10;
 			Rect rectangle = new Rect(

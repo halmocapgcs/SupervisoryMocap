@@ -30,6 +30,7 @@
 package com.PPRZonDroid;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -108,7 +109,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 	public int AcId, yaw, pitch, roll = 0;
 	public int throttle = 63;
 	public int mode = 2;
-	int JoyMessageLimiter = 0;
+	public final int NEW_POSITION = 23;
 
 	int RIGHT = 1;
 	int UP = 2;
@@ -350,13 +351,9 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 
 			while (isTaskRunning) {
 
-				if(AC_DATA.inspecting && (JoyMessageLimiter >= 8)) {
+				if(AC_DATA.inspecting) {
 					AC_DATA.mTcpClient.sendMessage("joyinfo" + " " + mode + " " + throttle + " "
 							+ roll + " " + pitch + " " + yaw);
-					JoyMessageLimiter = 0;
-				}
-				else{
-					JoyMessageLimiter++;
 				}
 
 				//Check if settings changed

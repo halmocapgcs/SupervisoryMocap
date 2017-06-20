@@ -27,7 +27,7 @@
             android:textColor="#fff8f9"
             android:textSize="22sp"
             android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="4dp"
+            android:layout_marginBottom="24dp"
             android:background="#424242"
             android:id="@+id/InspectionMode"/>
 
