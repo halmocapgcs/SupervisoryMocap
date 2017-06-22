@@ -31,6 +31,10 @@ package com.PPRZonDroid;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -41,6 +45,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.app.Activity;
 import android.content.Context;
@@ -63,9 +68,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import org.videolan.libvlc.IVideoPlayer;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.LibVlcException;
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -83,6 +92,8 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 	private int mSarNum;
 	private int mSarDen;
 
+	private TextView FlightTimeInspect, BatteryInspect, AltitudeInspect;
+	private ImageView BatteryImage;
 	private SurfaceView mSurfaceView;
 	private FrameLayout mSurfaceFrame;
 	private SurfaceHolder mSurfaceHolder;
@@ -104,12 +115,15 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 	boolean DEBUG=false;
 	boolean TcpSettingsChanged;
 	boolean UdpSettingsChanged;
+	boolean lowBatteryUnread = true;
+	boolean emptyBatteryUnread = true;
+	boolean isClicked = false;
 	String AppPassword;
 
 	public int AcId, yaw, pitch, roll = 0;
 	public int throttle = 63;
 	public int mode = 2;
-	public final int NEW_POSITION = 23;
+	public int percent = 100;
 
 	int RIGHT = 1;
 	int UP = 2;
@@ -123,6 +137,13 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 
 		mSurfaceView = (SurfaceView) findViewById(R.id.player_surface);
 		mSurfaceHolder = mSurfaceView.getHolder();
+
+		//health and status information
+		FlightTimeInspect = (TextView) findViewById(R.id.Flight_Time_On_Map_Inspect);
+		BatteryInspect = (TextView) findViewById(R.id.Bat_Vol_On_Map_Inspect);
+		AltitudeInspect = (TextView) findViewById(R.id.Alt_On_Map_Inspect);
+		BatteryImage = (ImageView) findViewById(R.id.batteryImageViewInspect);
+		BatteryImage.setBackgroundResource(R.drawable.battery_image_empty);
 
 		mSurfaceFrame = (FrameLayout) findViewById(R.id.player_surface_frame);
 		mMediaUrl = getIntent().getExtras().getString("videoUrl");
@@ -306,31 +327,35 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 				//yes this nested timer is not pretty but you need a) time for the pause block to go
 				//through so the drone doesn't revert to its original location and then b) time for
 				//the joystick mode to adjust back to auto2 or the drone triggers safe landing
-				AC_DATA.empty = false;
-				new CountDownTimer(500, 100) {
-					@Override
-					public void onTick(long l) {}
+				if(!isClicked) {
+					isClicked = true;
+					AC_DATA.empty = false;
+					new CountDownTimer(500, 100) {
+						@Override
+						public void onTick(long l) {
+						}
 
-					@Override
-					public void onFinish() {
-						mode = 2;
-						new CountDownTimer(1000, 1000){
-							@Override
-							public void onTick(long l) {}
+						@Override
+						public void onFinish() {
+							mode = 2;
+							new CountDownTimer(1000, 1000) {
+								@Override
+								public void onTick(long l) {
+								}
 
-							@Override
-							public void onFinish() {
-								AC_DATA.inspecting = false;
-								AC_DATA.mTcpClient.sendMessage("removeme");
-								//TelemetryAsyncTask.isCancelled();
-								AC_DATA.mTcpClient.stopClient();
-								isTaskRunning= false;
-								finish();
-							}
-						}.start();
-					}
-				}.start();
-
+								@Override
+								public void onFinish() {
+									AC_DATA.inspecting = false;
+									AC_DATA.mTcpClient.sendMessage("removeme");
+									//TelemetryAsyncTask.isCancelled();
+									AC_DATA.mTcpClient.stopClient();
+									isTaskRunning = false;
+									finish();
+								}
+							}.start();
+						}
+					}.start();
+				}
 			}
 		});
 	}
@@ -398,6 +423,85 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 			}
 			if (DEBUG) Log.d("PPRZ_info", "Stopping AsyncTask ..");
 			return null;
+		}
+
+		@Override
+		protected void onProgressUpdate(String... value) {
+			super.onProgressUpdate(value);
+
+			if(AC_DATA.AircraftData[0] != null && !AC_DATA.AircraftData[0].AC_Enabled){
+				AC_DATA.AircraftData[0].AC_Enabled = true;
+			}
+
+			if (AC_DATA.AircraftData[0].ApStatusChanged) {
+
+				Bitmap bitmap = Bitmap.createBitmap(
+						55, // Width
+						110, // Height
+						Bitmap.Config.ARGB_8888 // Config
+				);
+				Canvas canvas = new Canvas(bitmap);
+				//canvas.drawColor(Color.BLACK);
+				Paint paint = new Paint();
+				paint.setStyle(Paint.Style.FILL);
+				paint.setAntiAlias(true);
+				double battery_double = Double.parseDouble(AC_DATA.AircraftData[0].Battery);
+				double battery_width = (12.5 - battery_double) / (.027);
+				int val = (int) battery_width;
+
+
+				int newPercent = (int) (((battery_double - 9.8)/(10.9-9.8)) * 100);
+				if(newPercent >= 100 && percent >= 100){
+					BatteryInspect.setText("" + percent + " %");
+				}
+				if(newPercent < percent) {
+					BatteryInspect.setText("" + newPercent + " %");
+					percent = newPercent;
+				}
+
+
+				if (percent> 66) {
+					paint.setColor(Color.parseColor("#18A347"));
+				}
+				if (66 >= percent && percent >= 33) {
+					paint.setColor(Color.YELLOW);
+
+				}
+				if (33 > percent && percent > 10) {
+					paint.setColor(Color.parseColor("#B0090E"));
+					if(lowBatteryUnread) {
+						Toast.makeText(getApplicationContext(), "Warning: Low Battery", Toast.LENGTH_SHORT).show();
+						lowBatteryUnread = false;
+					}
+				}
+				if (percent <= 10) {
+					if(emptyBatteryUnread) {
+						Toast.makeText(getApplicationContext(), "No battery remaining. Land immediately", Toast.LENGTH_SHORT).show();
+						emptyBatteryUnread = false;
+					}
+				}
+				int padding = 10;
+				Rect rectangle = new Rect(
+						padding, // Left
+						100 - (int) (90*((double) percent *.01)), // Top
+						canvas.getWidth() - padding , // Right
+						canvas.getHeight() - padding // Bottom
+				);
+
+				canvas.drawRect(rectangle, paint);
+				BatteryImage.setImageBitmap(bitmap);
+
+
+				FlightTimeInspect.setText(AC_DATA.AircraftData[0].FlightTime + " s");
+				AC_DATA.AircraftData[0].ApStatusChanged = false;
+			}
+
+			if (AC_DATA.AircraftData[0].Altitude_Changed) {
+				AltitudeInspect.setText(AC_DATA.AircraftData[0].Altitude);
+
+				AC_DATA.AircraftData[0].Altitude_Changed = false;
+
+			}
 		}
 	}
 

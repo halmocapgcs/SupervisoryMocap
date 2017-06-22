@@ -169,6 +169,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 	public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   	boolean ShowOnlySelected = true;
+	boolean isClicked = false;
   	String AppPassword;
 
   	//AP_STATUS
@@ -309,19 +310,23 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 	  Button_LaunchInspectionMode.setOnClickListener(new View.OnClickListener() {
 		  @Override
 		  public void onClick(View view) {
-			  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 9, true);
-			  new CountDownTimer(1000, 100) {
-				  @Override
-				  public void onTick(long l) {}
+			  if(!isClicked) {
+				  isClicked = true;
+				  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 9, true);
+				  new CountDownTimer(1000, 100) {
+					  @Override
+					  public void onTick(long l) {
+					  }
 
-				  @Override
-				  public void onFinish() {
-					  String url = "file:///sdcard/DCIM/video.sdp";
-					  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
-					  inspect.putExtra("videoUrl", url);
-					  startActivityForResult(inspect, InspectionPosition);
-				  }
-			  }.start();
+					  @Override
+					  public void onFinish() {
+						  String url = "file:///sdcard/DCIM/video.sdp";
+						  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
+						  inspect.putExtra("videoUrl", url);
+						  startActivityForResult(inspect, InspectionPosition);
+					  }
+				  }.start();
+			  }
 		  }
 	  });
 
@@ -1209,6 +1214,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     protected void onRestart() {
         super.onRestart();
         AC_DATA.setup_udp();
+		isClicked = false;
         //Force to reconnect
         //TcpSettingsChanged = true;
         TelemetryAsyncTask = new ReadTelemetry();
