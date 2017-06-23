@@ -415,11 +415,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       AcListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
           if (position >= 1) {
-           BL_CountDown.cancel();
-           BL_CountDownTimerValue=BL_CountDownTimerDuration;
-           mBlListAdapter.ClickedInd=-1;
-           mBlListAdapter.notifyDataSetChanged();
-
            view.setSelected(true);
            set_selected_ac(position - 1,true);
            mDrawerLayout.closeDrawers();
@@ -618,12 +613,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         }
     }
 
-  /**
-   * Set Selected airplane
-   *
-   * @param AcInd
-   * @param centerAC : want to center AC?
-   */
+//called if different ac is selected in the left menu
   private void set_selected_ac(int AcInd,boolean centerAC) {
 
     AC_DATA.SelAcInd = AcInd;
@@ -847,31 +837,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   }
 
-  /**
-   * Check if everthink is ok with modified wp
-   *
-   * @param WpID
-   * @return
-   */
-  private boolean is_ac_marker(String WpID) {
-
-    for (int AcInd = 0; AcInd <= AC_DATA.IndexEnd; AcInd++) {     //Find waypoint which is changed!
-
-      if ((null == AC_DATA.AircraftData[AcInd].AC_Marker))
-        continue; //we dont have data for this wp yet
-
-      if (AC_DATA.AircraftData[AcInd].AC_Marker.getId().equals(WpID)) {
-        set_selected_ac(AcInd,true);
-        Toast.makeText(getApplicationContext(), "Selected A/C =  " + AC_DATA.AircraftData[AcInd].AC_Name, Toast.LENGTH_SHORT).show();
-        return true;
-
-      }
-
-
-    }
-    return false;
-
-  }
 
   /**
    * Send string to server
@@ -889,7 +854,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   }
 
   /**
-   * Play warning sound if airspeed goes below the selected value
+   * Play warning sound if airspeed goes below the selected value, unused but good example, could
+   * be useful
    */
   public void play_sound(Context context) throws IllegalArgumentException,
           SecurityException,
@@ -912,8 +878,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   }
 
   private void refresh_ac_list() {
-
-
     //Create or edit aircraft list
     int i;
     for (i = 0; i <= AC_DATA.IndexEnd; i++) {
@@ -965,7 +929,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     }
   }
 
-  //Refresh markers
+  //Refresh markers, the updates here to the ac icon are used but everything else remains from if
+	//we ever wanted to reimplement the ability to move markers loaded from flightplan
   private void refresh_markers() {
 
     int i;
@@ -1075,39 +1040,35 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     AC_DATA.ViewChanged = false;
   }
 
-  /**
-   * @param WpID
-   * @param NewPosition
-   * @param DialogTitle
-   */
-  private void waypoint_changed(String WpID, LatLng NewPosition, String DialogTitle) {
-
-    //Find the marker
-
-    int AcInd;
-    int MarkerInd = 1;
-    for (AcInd = 0; AcInd <= AC_DATA.IndexEnd; AcInd++) {     //Find waypoint which is changed!
-
-
-      for (MarkerInd = 1; (MarkerInd < AC_DATA.AircraftData[AcInd].NumbOfWps - 1); MarkerInd++) {
-
-        if ((null == AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker))
-          continue; //we dont have data for this wp yet
-        //Log.d("PPRZ_info", "Marker drop!!  Searching for AC= " + AcInd + " wpind:" + MarkerInd + " mid: "+AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId());
-        //Search the marker
-
-        if (AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId().equals(WpID)) {
-          //Log.d("PPRZ_info", "Marker found AC= " + AcInd + " wpind:" + MarkerInd);
-          NewPosition =  convert_to_google(NewPosition);
-          AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpPosition = NewPosition;
-
-          return;
-        }
-
-      }
-    }
-
-  }
+	//unused, would normally work in conjunction with flightplan waypoints being moved on google map
+//  private void waypoint_changed(String WpID, LatLng NewPosition, String DialogTitle) {
+//
+//    //Find the marker
+//
+//    int AcInd;
+//    int MarkerInd = 1;
+//    for (AcInd = 0; AcInd <= AC_DATA.IndexEnd; AcInd++) {     //Find waypoint which is changed!
+//
+//
+//      for (MarkerInd = 1; (MarkerInd < AC_DATA.AircraftData[AcInd].NumbOfWps - 1); MarkerInd++) {
+//
+//        if ((null == AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker))
+//          continue; //we dont have data for this wp yet
+//        //Log.d("PPRZ_info", "Marker drop!!  Searching for AC= " + AcInd + " wpind:" + MarkerInd + " mid: "+AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId());
+//        //Search the marker
+//
+//        if (AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId().equals(WpID)) {
+//          //Log.d("PPRZ_info", "Marker found AC= " + AcInd + " wpind:" + MarkerInd);
+//          NewPosition =  convert_to_google(NewPosition);
+//          AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpPosition = NewPosition;
+//
+//          return;
+//        }
+//
+//      }
+//    }
+//
+//  }
 
   private boolean checkReady() {
     if (mMap == null) {
