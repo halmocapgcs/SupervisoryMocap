@@ -87,9 +87,7 @@ import android.preference.PreferenceManager;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
@@ -102,7 +100,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.NumberPicker;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -129,25 +126,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 import static java.lang.Double.parseDouble;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.os.AsyncTask;
-import android.preference.PreferenceManager;
-import android.support.v7.app.ActionBarActivity;
 //import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
-
-import org.w3c.dom.Text;
-
-import java.net.DatagramSocket;
 
 
 public class MainActivity extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -172,10 +152,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 	boolean isClicked = false;
   	String AppPassword;
 
-  	//AP_STATUS
-  	TextView TextViewFlightTime;
-  	TextView TextViewBattery;
-
   	//AC Blocks
   	ArrayList<BlockModel> BlList = new ArrayList<BlockModel>();
   	BlockListAdapter mBlListAdapter;
@@ -192,122 +168,119 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   	//UI components (needs to be bound onCreate
   	private GoogleMap mMap;
-  	private TextView MapAlt;
-  	private ImageView mImageView;
+  	TextView TextViewAltitude;
+	TextView TextViewFlightTime;
+	TextView TextViewBattery;
+  	private ImageView batteryLevelView;
 
 	private Button Button_ConnectToServer, Button_LaunchInspectionMode;
   	public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere, Button_LandOrigin;
-	public LinearLayout Buttons;
 
   	private ToggleButton ChangeVisibleAcButon;
   	private DrawerLayout mDrawerLayout;
 
+	public int percent = 100;
 	boolean lowBatteryUnread = true;
 	boolean emptyBatteryUnread = true;
 
-  //Position descriptions >> in future this needs to be an array or struct
-  private LatLng AC_Pos = new LatLng(43.563958, 1.481391);
-  private String SendStringBuf;
-  private boolean AppStarted = false;             //App started indicator
-  private CharSequence mTitle;
+  	private String SendStringBuf;
+  	private boolean AppStarted = false;             //App started indicator
+  	private CharSequence mTitle;
 
-  //Variables for adding marker feature and for connecting said markers
-  public LinkedList<Marker> mMarkerHead = new LinkedList<Marker>();
-  public LinkedList<LatLng> pathPoints = new LinkedList<LatLng>();
-  public int mrkIndex = 0;
-  public Polyline path;
-  public boolean pathInitialized = false;
+  	//Variables for adding marker feature and for connecting said markers
+  	public LinkedList<Marker> mMarkerHead = new LinkedList<Marker>();
+  	public LinkedList<LatLng> pathPoints = new LinkedList<LatLng>();
+  	public int mrkIndex = 0;
+  	public Polyline path;
+  	public boolean pathInitialized = false;
 
-  //Establish static socket to be used across activities
-  static DatagramSocket sSocket = null;
+  	//Establish static socket to be used across activities
+  	static DatagramSocket sSocket = null;
 
-  //Unused, but potentially useful ground offset value to adjust the fact that the lab is recorded
-  // as below 0m
-  final float GROUND_OFFSET = .300088f;
-  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  //Background task to read and write telemery msgs
-  private boolean isTaskRunning;
+  	//Unused, but potentially useful ground offset value to adjust the fact that the lab is recorded
+  	// as below 0m
+  	final float GROUND_OFFSET = .300088f;
+  	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  	//Background task to read and write telemery msgs
+  	private boolean isTaskRunning;
 
-  private boolean DisableScreenDim;
-  private boolean DisplayFlightInfo;
+  	private boolean DisableScreenDim;
+  	private boolean DisplayFlightInfo;
 
+	//currently unused
+  	private CountDownTimer BL_CountDown;
+  	private int BL_CountDownTimerValue;
+  	private int JumpToBlock;
+  	private int BL_CountDownTimerDuration;
 
-  private CountDownTimer BL_CountDown;
-  private int BL_CountDownTimerValue;
-  private int JumpToBlock;
-	public int percent = 100;
-  private int BL_CountDownTimerDuration;
+  	private ArrayList<Model> generateDataAc() {
+    	AcList = new ArrayList<Model>();
+    	return AcList;
+  	}
 
-  private ArrayList<Model> generateDataAc() {
-    AcList = new ArrayList<Model>();
-    return AcList;
-  }
+  	private ArrayList<BlockModel> generateDataBl() {
+    	BlList = new ArrayList<BlockModel>();
+    	return BlList;
+  	}
 
-  private ArrayList<BlockModel> generateDataBl() {
-    BlList = new ArrayList<BlockModel>();
-    return BlList;
-  }
+  	private Thread mTCPthread;
 
-  private Thread mTCPthread;
+  	/**
+  	 * Setup TCP and UDP connections of Telemetry class
+  	 */
+  	private void setup_telemetry_class() {
 
-  /**
-   * Setup TCP and UDP connections of Telemetry class
-   */
-  private void setup_telemetry_class() {
+    	//Create Telemetry class
+    	AC_DATA = new Telemetry();
 
-    //Create Telemetry class
-    AC_DATA = new Telemetry();
+    	//Read & setup Telemetry class
+    	AC_DATA.ServerIp = "192.168.50.10";
+    	AC_DATA.ServerTcpPort = Integer.parseInt(AppSettings.getString(SERVER_PORT_ADDRESS, getString(R.string.pref_port_number_default)));
+    	AC_DATA.UdpListenPort = Integer.parseInt(AppSettings.getString(LOCAL_PORT_ADDRESS, getString(R.string.pref_local_port_number_default)));
+    	AC_DATA.AirSpeedMinSetting = parseDouble(AppSettings.getString(MIN_AIRSPEED, "10"));
+    	AC_DATA.DEBUG=DEBUG;
 
-    //Read & setup Telemetry class
-    AC_DATA.ServerIp = "192.168.50.10";
-    AC_DATA.ServerTcpPort = Integer.parseInt(AppSettings.getString(SERVER_PORT_ADDRESS, getString(R.string.pref_port_number_default)));
-    AC_DATA.UdpListenPort = Integer.parseInt(AppSettings.getString(LOCAL_PORT_ADDRESS, getString(R.string.pref_local_port_number_default)));
-    AC_DATA.AirSpeedMinSetting = parseDouble(AppSettings.getString(MIN_AIRSPEED, "10"));
-    AC_DATA.DEBUG=DEBUG;
+    	AC_DATA.GraphicsScaleFactor = getResources().getDisplayMetrics().density;
+    	AC_DATA.prepare_class();
 
-    AC_DATA.GraphicsScaleFactor = getResources().getDisplayMetrics().density;
-    AC_DATA.prepare_class();
+    	//AC_DATA.tcp_connection();
+    	//AC_DATA.mTcpClient.setup_tcp();
+    	AC_DATA.setup_udp();
+  	}
 
-    //AC_DATA.tcp_connection();
-    //AC_DATA.mTcpClient.setup_tcp();
-    AC_DATA.setup_udp();
-  }
+  	/**
+  	 * Bound UI items
+  	 */
+  	private void set_up_app() {
 
-  /**
-   * Bound UI items
-   */
-  private void set_up_app() {
+      	//Get app settings
+      	AppSettings = PreferenceManager.getDefaultSharedPreferences(this);
+      	AppSettings.registerOnSharedPreferenceChangeListener(this);
 
-      //Get app settings
-      AppSettings = PreferenceManager.getDefaultSharedPreferences(this);
-      AppSettings.registerOnSharedPreferenceChangeListener(this);
+      	AppPassword = "1234";
 
-      AppPassword = "1234";
+      	DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
 
-      DisableScreenDim = AppSettings.getBoolean("disable_screen_dim", true);
+      	//Setup left drawer
+      	mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
-      //Setup left drawer
-      mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+      	//Setup AC List
+      	setup_ac_list();
 
-      //Setup AC List
-      setup_ac_list();
+      	//Setup Block counter
+	  	//setup_counter();
 
-      //Setup Block counter
-	  //setup_counter();
+	  	//continue to bound UI items
+	  	TextViewAltitude = (TextView) findViewById(R.id.Alt_On_Map);
+		TextViewBattery = (TextView) findViewById(R.id.Bat_Vol_On_Map);
+		TextViewFlightTime = (TextView) findViewById(R.id.Flight_Time_On_Map);
+		batteryLevelView = (ImageView) findViewById(R.id.batteryImageView);
 
-	  //Set map zoom level variable (if any);
-	  if (AppSettings.contains("MapZoomLevel")) {
-		  MapZoomLevel = AppSettings.getFloat("MapZoomLevel", 17.0f);
-	  }
+	  	Button_ConnectToServer = (Button) findViewById(R.id.Button_ConnectToServer);
+	  	setup_map_ifneeded();
 
-	  //continue to bound UI items
-	  MapAlt = (TextView) findViewById(R.id.Alt_On_Map);
-
-	  Button_ConnectToServer = (Button) findViewById(R.id.Button_ConnectToServer);
-	  setup_map_ifneeded();
-
-	  Button_LaunchInspectionMode = (Button) findViewById(R.id.InspectionMode);
-	  Button_LaunchInspectionMode.setOnClickListener(new View.OnClickListener() {
+	  	Button_LaunchInspectionMode = (Button) findViewById(R.id.InspectionMode);
+	  	Button_LaunchInspectionMode.setOnClickListener(new View.OnClickListener() {
 		  @Override
 		  public void onClick(View view) {
 			  if(!isClicked) {
@@ -330,14 +303,13 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  }
 	  });
 
-	  Buttons = (LinearLayout) findViewById(R.id.buttonList);
-	  Button_Takeoff = (Button) findViewById(R.id.takeoff);
-	  Button_Execute = (Button) findViewById(R.id.execute_flightplan);
-	  Button_Pause = (Button) findViewById(R.id.pause_flightplan);
-	  Button_LandHere = (Button) findViewById(R.id.land_here);
-	  Button_LandOrigin = (Button) findViewById(R.id.land_at_origin);
+	  	Button_Takeoff = (Button) findViewById(R.id.takeoff);
+	  	Button_Execute = (Button) findViewById(R.id.execute_flightplan);
+	  	Button_Pause = (Button) findViewById(R.id.pause_flightplan);
+	  	Button_LandHere = (Button) findViewById(R.id.land_here);
+	  	Button_LandOrigin = (Button) findViewById(R.id.land_at_origin);
 
-	  Button_Takeoff.setOnTouchListener(new View.OnTouchListener() {
+	  	Button_Takeoff.setOnTouchListener(new View.OnTouchListener() {
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
@@ -347,7 +319,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  }
 	  });
 
-	  Button_Execute.setOnTouchListener(new View.OnTouchListener() {
+	  	Button_Execute.setOnTouchListener(new View.OnTouchListener() {
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
@@ -357,7 +329,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  }
 	  });
 
-	  Button_Pause.setOnTouchListener(new View.OnTouchListener() {
+	  	Button_Pause.setOnTouchListener(new View.OnTouchListener() {
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
@@ -367,7 +339,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  }
 	  });
 
-	  Button_LandHere.setOnTouchListener(new View.OnTouchListener() {
+	  	Button_LandHere.setOnTouchListener(new View.OnTouchListener() {
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
@@ -377,7 +349,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  }
 	  });
 
-	  Button_LandOrigin.setOnTouchListener(new View.OnTouchListener() {
+	  	Button_LandOrigin.setOnTouchListener(new View.OnTouchListener() {
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
@@ -387,14 +359,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  }
 	  });
 
-	  ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
-	  ChangeVisibleAcButon.setSelected(false);
+	  	ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
+	  	ChangeVisibleAcButon.setSelected(false);
 
-	  TextViewBattery = (TextView) findViewById(R.id.Bat_Vol_On_Map);
-	  TextViewFlightTime = (TextView) findViewById(R.id.Flight_Time_On_Map);
-	  mImageView = (ImageView) findViewById(R.id.batteryImageView);
-
-  }
+  	}
 
 
 //  //primes countdown timer
@@ -681,55 +649,56 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       refresh_ac_list();
   }
 
-  /**
-   * Refresh block list on right
-   */
-  private void refresh_block_list() {
-
-    int i;
-    BlList.clear();
-
-    /*  This implementation is for adding all blocks in a flight plan. Since we know what specific
-    blocks we want to allow the user to access (and are making some of our own), we're going to bypass
-    and directly add the five we know we want
-
-    //the -3 added in this for loop makes it so that the nonessential landed, flare, and HOME
-    //blocks do not appear for our app
-    for (i = 0; i < AC_DATA.AircraftData[AC_DATA.SelAcInd].BlockCount-3; i++) {
-      BlList.add(new BlockModel(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Blocks[i].BlName));
-    }
-
-    */
-
-    BlList.add(new BlockModel("Takeoff"));
-    BlList.add(new BlockModel("Execute Flightplan"));
-    BlList.add(new BlockModel("Pause Flightplan"));
-    BlList.add(new BlockModel("Land Here"));
-    BlList.add(new BlockModel("Land at Origin"));
-
-    mBlListAdapter.BlColor = AC_DATA.muiGraphics.get_color(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Color);
-    mBlListAdapter.SelectedInd = AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock;
-
-
-      AnimationSet set = new AnimationSet(true);
-
-      Animation animation = new AlphaAnimation(0.0f, 1.0f);
-
-      animation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, +1.0f,
-              Animation.RELATIVE_TO_SELF, 0.0f,
-              Animation.RELATIVE_TO_SELF, 0.0f,
-              Animation.RELATIVE_TO_SELF, 0.0f
-      );
-      animation.setDuration(250);
-      set.addAnimation(animation);
-
-      LayoutAnimationController controller =
-              new LayoutAnimationController(set, 0.25f);
-      BlListView.setLayoutAnimation(controller);
-
-
-    mBlListAdapter.notifyDataSetChanged();
-  }
+  //old block list refresh method, unused
+//  /**
+//   * Refresh block list on right
+//   */
+//  private void refresh_block_list() {
+//
+//    int i;
+//    BlList.clear();
+//
+//    /*  This implementation is for adding all blocks in a flight plan. Since we know what specific
+//    blocks we want to allow the user to access (and are making some of our own), we're going to bypass
+//    and directly add the five we know we want
+//
+//    //the -3 added in this for loop makes it so that the nonessential landed, flare, and HOME
+//    //blocks do not appear for our app
+//    for (i = 0; i < AC_DATA.AircraftData[AC_DATA.SelAcInd].BlockCount-3; i++) {
+//      BlList.add(new BlockModel(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Blocks[i].BlName));
+//    }
+//
+//    */
+//
+//    BlList.add(new BlockModel("Takeoff"));
+//    BlList.add(new BlockModel("Execute Flightplan"));
+//    BlList.add(new BlockModel("Pause Flightplan"));
+//    BlList.add(new BlockModel("Land Here"));
+//    BlList.add(new BlockModel("Land at Origin"));
+//
+//    mBlListAdapter.BlColor = AC_DATA.muiGraphics.get_color(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Color);
+//    mBlListAdapter.SelectedInd = AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock;
+//
+//
+//      AnimationSet set = new AnimationSet(true);
+//
+//      Animation animation = new AlphaAnimation(0.0f, 1.0f);
+//
+//      animation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, +1.0f,
+//              Animation.RELATIVE_TO_SELF, 0.0f,
+//              Animation.RELATIVE_TO_SELF, 0.0f,
+//              Animation.RELATIVE_TO_SELF, 0.0f
+//      );
+//      animation.setDuration(250);
+//      set.addAnimation(animation);
+//
+//      LayoutAnimationController controller =
+//              new LayoutAnimationController(set, 0.25f);
+//      BlListView.setLayoutAnimation(controller);
+//
+//
+//    mBlListAdapter.notifyDataSetChanged();
+//  }
 
   //Bound map (if not bounded already)
   private void setup_map_ifneeded() {
@@ -1646,7 +1615,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 			if(newPercent >= 100 && percent >= 100){
 				TextViewBattery.setText("" + percent + " %");
 			}
-			if(newPercent < percent) {
+			if(newPercent < percent && newPercent >= 0) {
 				TextViewBattery.setText("" + newPercent + " %");
 				percent = newPercent;
 			}
@@ -1681,8 +1650,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 			);
 
 			canvas.drawRect(rectangle, paint);
-			mImageView.setImageBitmap(bitmap);
-			mImageView.setBackgroundResource(R.drawable.battery_image_empty);
+			batteryLevelView.setImageBitmap(bitmap);
+			batteryLevelView.setBackgroundResource(R.drawable.battery_image_empty);
 
 
           TextViewFlightTime.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].FlightTime + " s");
@@ -1726,7 +1695,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         refresh_markers();
 
         if (AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude_Changed) {
-          MapAlt.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude);
+          TextViewAltitude.setText(AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude);
 
             AC_DATA.AircraftData[AC_DATA.SelAcInd].Altitude_Changed = false;
 
@@ -1877,7 +1846,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         SeekBar altSeek = new SeekBar(this);
         altSeek.setMax(25);
         if(flag.equals("NEW")) {
-            altSeek.setProgress(10);
+			if(mrkIndex>0) {
+				altSeek.setProgress((int) (10*Double.parseDouble(mMarkerHead.get(mrkIndex - 1).getSnippet())));
+			}
+			else{
+				altSeek.setProgress(10);
+			}
         }
         else if(flag.equals("OLD")){
             altSeek.setProgress((int)(10*Double.parseDouble(altMarker.getSnippet())));
@@ -1902,13 +1876,15 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         AlertDialog.Builder altDialog = new AlertDialog.Builder(MainActivity.this);
         altDialog.setView(altLayout);
         altDialog.setTitle("Change Altitude")
-                .setMessage("Click Adjust to confirm new altitude. Clicking Cancel will set the altitude to be the same " +
+                .setMessage("Click Confirm to set new altitude. Clicking Cancel will set the altitude to be the same " +
                         "as the previous waypoint")
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if(mFlag.equals("NEW")){
                             if(mrkIndex > 1){
+								//note the minus two here bc the mrkindex++ line will have executed
+								//by this point
                                 altMarker.setSnippet(mMarkerHead.get(mrkIndex-2).getSnippet());
                             }
                             else{
@@ -1919,7 +1895,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                                 "red", altMarker.getSnippet(), AC_DATA.GraphicsScaleFactor)));
                     }
                 })
-                .setPositiveButton("Adjust", new DialogInterface.OnClickListener() {
+                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         altMarker.setSnippet(altVal.getText().toString());
@@ -1927,7 +1903,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                                 "red", altMarker.getSnippet(), AC_DATA.GraphicsScaleFactor)));
                     }
                 }).create();
-        if(flag.equals("OLD")) altDialog.setMessage("Click Adjust to confirm new altitude. Clicking Cancel " +
+        if(flag.equals("OLD")) altDialog.setMessage("Click Confirm to set new altitude. Clicking Cancel " +
                 "will keep the altitude as it had been set.");
         altDialog.show();
     }

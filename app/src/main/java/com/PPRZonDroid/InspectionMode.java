@@ -454,7 +454,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 				if(newPercent >= 100 && percent >= 100){
 					BatteryInspect.setText("" + percent + " %");
 				}
-				if(newPercent < percent) {
+				if(newPercent < percent && newPercent >=100) {
 					BatteryInspect.setText("" + newPercent + " %");
 					percent = newPercent;
 				}
