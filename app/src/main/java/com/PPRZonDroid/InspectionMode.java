@@ -120,10 +120,11 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 	boolean isClicked = false;
 	String AppPassword;
 
-	public int AcId, yaw, pitch, roll = 0;
+	public int yaw, pitch, roll = 0;
 	public int throttle = 63;
 	public int mode = 2;
 	public int percent = 100;
+	public int AcId = 31;
 
 	int RIGHT = 1;
 	int UP = 2;
@@ -272,7 +273,8 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 						@Override
 						public void onFinish() {
 							float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude);
-							AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
+							AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT " + AcId  + " 4 " +
+									AC_DATA.AircraftData[0].Position.latitude + " " +
 									AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
 						}
 					}.start();
@@ -311,7 +313,8 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 						@Override
 						public void onFinish() {
 							float Altitude = Float.parseFloat(AC_DATA.AircraftData[0].RawAltitude);
-							AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT 31 4 " + AC_DATA.AircraftData[0].Position.latitude + " " +
+							AC_DATA.SendToTcp = AppPassword + "PPRZonDroid MOVE_WAYPOINT " + AcId  + " 4 " +
+									AC_DATA.AircraftData[0].Position.latitude + " " +
 									AC_DATA.AircraftData[0].Position.longitude + " " + Altitude;
 						}
 					}.start();

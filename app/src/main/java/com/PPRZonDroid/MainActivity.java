@@ -151,6 +151,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	boolean ShowOnlySelected = true;
 	boolean isClicked = false;
   	String AppPassword;
+	public int AcId = 31;
 
   	//AC Blocks
   	ArrayList<BlockModel> BlList = new ArrayList<BlockModel>();
@@ -285,7 +286,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public void onClick(View view) {
 			  if(!isClicked) {
 				  isClicked = true;
-				  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 9, true);
+				  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 9, true);
 				  new CountDownTimer(1000, 100) {
 					  @Override
 					  public void onTick(long l) {
@@ -481,8 +482,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 //        LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
 //        float altitude = Float.parseFloat(newNEXT.getSnippet());
 //        float adjustedAltitude = altitude - GROUND_OFFSET;
-//        //Note below that 31 is the AC id for our ardrone and 7 is the waypoint number for NEXT
-//        SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + 31 + " " + 7 +
+//        //Note below that 31 or 203 is the AC id for our ardrone and 7 is the waypoint number for NEXT
+//        SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + AcId + " " + 7 +
 //                " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + adjustedAltitude;
 //        send_to_server(SendStringBuf, true);
 //
@@ -493,7 +494,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 //
 //            @Override
 //            public void onFinish() {
-//                send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 6, true);
+//                send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 6, true);
 //            }
 //        }.start();
 //    }
@@ -578,8 +579,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
             LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
             float altitude = Float.parseFloat(newNEXT.getSnippet());
             float adjustedAltitude = altitude - GROUND_OFFSET;
-            //Note below that 31 is the AC id for our ardrone and 7 is the waypoint number for NEXT
-            SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + 31 + " " + 7 +
+            //Note below that 31 or 203 is the AC id for our ardrone and 7 is the waypoint number for NEXT
+            SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + AcId + " " + 7 +
                     " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + adjustedAltitude;
             send_to_server(SendStringBuf, true);
 
@@ -590,7 +591,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
                 @Override
                 public void onFinish() {
-                    send_to_server("PPRZonDroid JUMP_TO_BLOCK " + 31 + " " + 6, true);
+                    send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 6, true);
                 }
             }.start();
         }
@@ -901,7 +902,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 
   /**
-   * Add markers of given AcIndex to map. AcIndex is not Ac ID!!! Ac ID for our drone is 31,
+   * Add markers of given AcIndex to map. AcIndex is not Ac ID!!! Ac ID for our drone is 31 or 203,
    * AcIndex is 0 as it is the first and only drone in the aircraftdata. Feel free to remove the
    * functionality of having multiple drones if you want.
    */
