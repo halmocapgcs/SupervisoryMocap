@@ -75,6 +75,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -90,11 +91,6 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
-import android.view.animation.LayoutAnimationController;
-import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -175,7 +171,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	private ImageView batteryLevelView;
 
 	private Button Button_ConnectToServer, Button_LaunchInspectionMode;
-  	public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere, Button_LandOrigin;
+  	public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere;
 
   	private ToggleButton ChangeVisibleAcButon;
   	private DrawerLayout mDrawerLayout;
@@ -192,8 +188,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	public LinkedList<Marker> mMarkerHead = new LinkedList<Marker>();
   	public LinkedList<LatLng> pathPoints = new LinkedList<LatLng>();
   	public int mrkIndex = 0;
+    public double lastAltitude = 1.0;
   	public Polyline path;
   	public boolean pathInitialized = false;
+    public LatLng originalPosition;
 
   	//Establish static socket to be used across activities
   	static DatagramSocket sSocket = null;
@@ -308,7 +306,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 	  	Button_Execute = (Button) findViewById(R.id.execute_flightplan);
 	  	Button_Pause = (Button) findViewById(R.id.pause_flightplan);
 	  	Button_LandHere = (Button) findViewById(R.id.land_here);
-	  	Button_LandOrigin = (Button) findViewById(R.id.land_at_origin);
 
 	  	Button_Takeoff.setOnTouchListener(new View.OnTouchListener() {
 		  @Override
@@ -350,53 +347,11 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  }
 	  });
 
-	  	Button_LandOrigin.setOnTouchListener(new View.OnTouchListener() {
-		  @Override
-		  public boolean onTouch(View v, MotionEvent event) {
-			  clear_buttons();
-			  set_selected_block(4,false);
-			  Button_LandOrigin.setSelected(true);
-			  return false;
-		  }
-	  });
-
 	  	ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
 	  	ChangeVisibleAcButon.setSelected(false);
 
   	}
 
-
-//  //primes countdown timer
-//  private void setup_counter() {
-//      //Get timeout from appsettings
-//      BL_CountDownTimerDuration = Integer.parseInt(AppSettings.getString("block_change_timeout", "3")) *300;
-//      BL_CountDownTimerValue =BL_CountDownTimerDuration;
-//
-//      //Setup timer for progressbar of clicked block
-//      BL_CountDown = new CountDownTimer(BL_CountDownTimerDuration, 100 ) {
-//          @Override
-//          public void onTick(long l) {
-//
-//              if (BL_CountDownTimerDuration>0) {
-//                  BL_CountDownTimerValue= BL_CountDownTimerValue - 100;
-//                  mBlListAdapter.BlProgress.setProgress(((BL_CountDownTimerValue*100) /BL_CountDownTimerDuration)) ;
-//                  //if (DEBUG) Log.d("PPRZ_info", "Counter value: " + process_val );
-//              }
-//          }
-//
-//          @Override
-//          public void onFinish() {
-//              if (BL_CountDownTimerDuration>0) {
-//
-//                  BL_CountDownTimerValue= BL_CountDownTimerValue - 100;
-//                  mBlListAdapter.BlProgress.setProgress(((BL_CountDownTimerValue*100) /BL_CountDownTimerDuration)) ;
-//                  BL_CountDownTimerValue = BL_CountDownTimerDuration;
-//                  set_selected_block(JumpToBlock, false);
-//              }
-//          }
-//
-//      };
-//  }
 
   //largely unnecessary, this was to allow multiple drones to load at the same time, left menu
   private void setup_ac_list() {
@@ -425,85 +380,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         });
 
   }
-
-  //this implementation of blocks works for when we are showing all (or at least most) of the flight
-  //plans pre-designated blocks. We want to create our own custom blocks that hide most of this
-  //looping, which has been created below
-//  private void set_selected_block(int BlocId,boolean ReqFromServer) {
-//
-//    //AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock = BlocId;
-//
-//    if (ReqFromServer){
-//        mBlListAdapter.SelectedInd = BlocId + 1;
-//        mBlListAdapter.notifyDataSetChanged();
-//
-//        //this checks to see if the server is at the arrived block, in which case we shift back
-//        //to the next waypoint block which is handled locally rather than with the reqfromserver tag
-//        if(BlocId == 7){
-//
-//            /* current implementation removes the connecting polyline from previous wp
-//             *  as well as that previous wp */
-//
-//            Marker popped = mMarkerHead.removeFirst();
-//            popped.remove();
-//            mrkIndex--;
-//
-//            pathPoints.removeFirst();
-//            adjust_marker_lines();
-//
-//            //code below would be used to change an old waypoint grey rather than removing it
-////            popped.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
-////                    "grey", popped.getTitle(), AC_DATA.GraphicsScaleFactor)));
-//
-//            //timer used to pause between wps to give the user some breathing room
-//            new CountDownTimer(500, 100){
-//                @Override
-//                public void onTick(long l) {
-//                }
-//                @Override
-//                public void onFinish() {
-//                    //continues the loop by updating next waypoint
-//                    set_selected_block(6, false);
-//                }
-//            }.start();
-//
-//
-//
-//        }
-//    }
-//    //if start is pressed, we need to handle this special case to move to the next block but with
-//    //the reqfromserver variable set false in order to trigger the local code that adjusts the wps
-//    else if(BlocId == 5){
-//        set_selected_block(6, false);
-//    }
-//    //added feature here to loop through the Next Waypoint! block, which is block number 6
-//    else if(BlocId == 6 && mMarkerHead.peek() != null){
-//        Marker newNEXT = mMarkerHead.peek();
-//        LatLng coordNEXT = convert_to_google(newNEXT.getPosition());
-//        float altitude = Float.parseFloat(newNEXT.getSnippet());
-//        float adjustedAltitude = altitude - GROUND_OFFSET;
-//        //Note below that 31 or 203 is the AC id for our ardrone and 7 is the waypoint number for NEXT
-//        SendStringBuf = "PPRZonDroid MOVE_WAYPOINT " + AcId + " " + 7 +
-//                " " + coordNEXT.latitude + " " + coordNEXT.longitude + " " + adjustedAltitude;
-//        send_to_server(SendStringBuf, true);
-//
-//        //timer is needed to ensure paparazzi system corrects waypoint first
-//        new CountDownTimer(1000, 1000){
-//            @Override
-//            public void onTick(long l) {}
-//
-//            @Override
-//            public void onFinish() {
-//                send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 6, true);
-//            }
-//        }.start();
-//    }
-//    else {
-//        //Notify server
-//        send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + BlocId, true);
-//
-//    }
-//  }
 
     private void set_selected_block(int BlocId,boolean ReqFromServer) {
 
@@ -608,10 +484,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         else if(BlocId == 3){
             send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 10, true);
         }
-        //land at origin
-        else if(BlocId == 4){
-            send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Id + " " + 11, true);
-        }
     }
 
 //called if different ac is selected in the left menu
@@ -640,57 +512,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       refresh_ac_list();
   }
 
-  //old block list refresh method, unused
-//  /**
-//   * Refresh block list on right
-//   */
-//  private void refresh_block_list() {
-//
-//    int i;
-//    BlList.clear();
-//
-//    /*  This implementation is for adding all blocks in a flight plan. Since we know what specific
-//    blocks we want to allow the user to access (and are making some of our own), we're going to bypass
-//    and directly add the five we know we want
-//
-//    //the -3 added in this for loop makes it so that the nonessential landed, flare, and HOME
-//    //blocks do not appear for our app
-//    for (i = 0; i < AC_DATA.AircraftData[AC_DATA.SelAcInd].BlockCount-3; i++) {
-//      BlList.add(new BlockModel(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Blocks[i].BlName));
-//    }
-//
-//    */
-//
-//    BlList.add(new BlockModel("Takeoff"));
-//    BlList.add(new BlockModel("Execute Flightplan"));
-//    BlList.add(new BlockModel("Pause Flightplan"));
-//    BlList.add(new BlockModel("Land Here"));
-//    BlList.add(new BlockModel("Land at Origin"));
-//
-//    mBlListAdapter.BlColor = AC_DATA.muiGraphics.get_color(AC_DATA.AircraftData[AC_DATA.SelAcInd].AC_Color);
-//    mBlListAdapter.SelectedInd = AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock;
-//
-//
-//      AnimationSet set = new AnimationSet(true);
-//
-//      Animation animation = new AlphaAnimation(0.0f, 1.0f);
-//
-//      animation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, +1.0f,
-//              Animation.RELATIVE_TO_SELF, 0.0f,
-//              Animation.RELATIVE_TO_SELF, 0.0f,
-//              Animation.RELATIVE_TO_SELF, 0.0f
-//      );
-//      animation.setDuration(250);
-//      set.addAnimation(animation);
-//
-//      LayoutAnimationController controller =
-//              new LayoutAnimationController(set, 0.25f);
-//      BlListView.setLayoutAnimation(controller);
-//
-//
-//    mBlListAdapter.notifyDataSetChanged();
-//  }
-
   //Bound map (if not bounded already)
   private void setup_map_ifneeded() {
     // Do a null check to confirm that we have not already instantiated the map.
@@ -714,7 +535,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       mMap.setMyLocationEnabled(false);
 
       //Set map type
-      mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+      mMap.setMapType(GoogleMap.MAP_TYPE_NONE);
 
       //Disable zoom and gestures to lock the image in place
       mMap.getUiSettings().setAllGesturesEnabled(false);
@@ -735,7 +556,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       mMap.moveCamera(CameraUpdateFactory.newCameraPosition(rotated));
 
       //Create the ground overlay
-      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.disasterzone);
+      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.pictfinaldoor);
       GroundOverlay trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
               .position(labOrigin, (float) 77.15)   //note if you change size of map you need to redo this val too
@@ -747,6 +568,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
           @Override
           public void onMarkerDragStart(Marker marker) {
+              originalPosition = marker.getPosition();
               int index = mMarkerHead.indexOf(marker);
               pathPoints.set(index + 1, marker.getPosition());
               path.setPoints(pathPoints);
@@ -755,6 +577,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
           @Override
           public void onMarkerDrag(Marker marker) {
+              if(outsideBounds(marker.getPosition())) marker.setVisible(false);
+              else marker.setVisible(true);
+
               int index = mMarkerHead.indexOf(marker);
               pathPoints.set(index + 1, marker.getPosition());
               path.setPoints(pathPoints);
@@ -762,7 +587,15 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
           @Override
           public void onMarkerDragEnd(Marker marker) {
-              if(!mMarkerHead.contains(marker)) {
+              if(outsideBounds(marker.getPosition())){
+                  int index = mMarkerHead.indexOf(marker);
+                  launch_error_dialog();
+                  marker.setPosition(originalPosition);
+                  marker.setVisible(true);
+                  pathPoints.set(index + 1, marker.getPosition());
+                  path.setPoints(pathPoints);
+              }
+              else if(!mMarkerHead.contains(marker)) {
                   // this is code from the original app, works well but we don't want to allow users
                   // to change predesignated waypoints that we choose to show them
 
@@ -775,11 +608,20 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       }
     });
 
+    mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+        @Override
+        public void onMapClick(LatLng latLng) {
+            Point markerScreenPosition = mMap.getProjection().toScreenLocation(latLng);
+            Log.d("location", "x: " + markerScreenPosition.x + "     y: " + markerScreenPosition.y);
+        }
+    });
+
     //listener to add in functionality of adding a waypoint and adding to data structure for
     //path execution
     mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
         @Override
         public void onMapLongClick(LatLng latLng) {
+            if(outsideBounds(latLng)) return;
             Marker newMarker = mMap.addMarker(new MarkerOptions()
                 .position(latLng)
                 .draggable(true)
@@ -797,7 +639,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 pathPoints.addLast(newMarker.getPosition());
 				path = mMap.addPolyline(new PolylineOptions()
                         .addAll(pathPoints)
-						.width(4)
+						.width(7)
 						.color(Color.RED));
 			}
 			else{
@@ -971,26 +813,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                   continue; //we dont have data for this wp yet
 
               if (DEBUG) Log.d("PPRZ_info", "New marker added for Ac id: " + AcInd + " wpind:" + MarkerInd);
-
-              //this if statement is used to specify what waypoints are shown on the map
-              //in this case, just the origin. This number is variable depending on the flight plan
-              //and will need to be updated if changes are made
-              if(MarkerInd == 8){
-                  AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker = mMap.addMarker(new MarkerOptions()
-                    .position(convert_to_lab(AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpPosition))
-                    .title(AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpName)
-                    .draggable(false)
-                    .snippet("STATIC")
-                    .anchor(0.5f,0.378f)
-                    .icon(BitmapDescriptorFactory.fromBitmap(AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarkerIcon)));
-                  AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.setVisible(AcMarkerVisible(AcInd));
-
-
-              if ("_".equals(AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpName.substring(0, 1))) {
-                  AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.setVisible(false);
-              }}
-
-
 
             AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].MarkerModified = false;
           }
@@ -1303,28 +1125,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     mDrawerLayout.closeDrawers();
 
   }
-
-//    public void confirm_bl_change(View mView) {
-//        //Cancel timer & clear BlockList
-//        BL_CountDown.cancel();
-//        BL_CountDownTimerValue=BL_CountDownTimerDuration;
-//        mBlListAdapter.ClickedInd=-1;
-//        mBlListAdapter.notifyDataSetChanged();
-//        //Notify app_server for changes
-//        set_selected_block(JumpToBlock,false);
-//
-//    }
-
-//    public void cancel_bl_change(View mView) {
-//        //Cancel timer & clear BlockList
-//        BL_CountDown.cancel();
-//        BL_CountDownTimerValue=BL_CountDownTimerDuration;
-//        mBlListAdapter.ClickedInd=-1;
-//        mBlListAdapter.notifyDataSetChanged();
-//        Toast.makeText(getApplicationContext(), "Block change cancelled.", Toast.LENGTH_SHORT).show();
-//
-//
-//    }
 
   //Function called when toggleButton_ConnectToServer (in left fragment) is pressed
   public void connect_to_server(View mView) {
@@ -1724,7 +1524,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		Button_Execute.setSelected(false);
 		Button_Pause.setSelected(false);
 		Button_LandHere.setSelected(false);
-		Button_LandOrigin.setSelected(false);
 	}
 
 	//this method converts the google latitudes to the corresponding points on the transposed image
@@ -1771,6 +1570,16 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         path.setPoints(pathPoints);
     }
 
+    //dialog if waypoint is placed out of bounds
+    public void launch_error_dialog(){
+        AlertDialog errorDialog = new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Error!")
+                .setMessage("You have placed a waypoint outside of the bounds of the course.")
+                .setPositiveButton("OK",null)
+                .create();
+        errorDialog.show();
+    }
+
     //dialog to bring up removal control for a waypoint
     public void remove_waypoint_dialog(Marker marker){
         final Marker rMarker = marker;
@@ -1783,6 +1592,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                         rMarker.remove();
                         if(mrkIndex>0) mrkIndex--;
                         int index = mMarkerHead.indexOf(rMarker);
+                        if(index == mrkIndex) lastAltitude = Double.parseDouble(rMarker.getSnippet());
                         mMarkerHead.remove(index);
                         pathPoints.remove(index + 1);
                         adjust_marker_lines();
@@ -1812,7 +1622,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 				altSeek.setProgress((int) (10*Double.parseDouble(mMarkerHead.get(mrkIndex - 1).getSnippet())));
 			}
 			else{
-				altSeek.setProgress(10);
+				altSeek.setProgress((int) (lastAltitude * 10));
 			}
         }
         else if(flag.equals("OLD")){
@@ -1837,7 +1647,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         //create the actual dialog
         AlertDialog.Builder altDialog = new AlertDialog.Builder(MainActivity.this);
         altDialog.setView(altLayout);
-        altDialog.setTitle("Change Altitude")
+        altDialog.setTitle("Waypoint Added!")
                 .setMessage("Click Confirm to set new altitude. Clicking Cancel will set the altitude to be the same " +
                         "as the previous waypoint")
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -1850,7 +1660,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                                 altMarker.setSnippet(mMarkerHead.get(mrkIndex-2).getSnippet());
                             }
                             else{
-                                altMarker.setSnippet("1.0");
+                                altMarker.setSnippet("" + lastAltitude);
                             }
                         }
                         altMarker.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
@@ -1861,13 +1671,43 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         altMarker.setSnippet(altVal.getText().toString());
+                        lastAltitude = Double.parseDouble(altVal.getText().toString());
                         altMarker.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
                                 "red", altMarker.getSnippet(), AC_DATA.GraphicsScaleFactor)));
                     }
                 }).create();
-        if(flag.equals("OLD")) altDialog.setMessage("Click Confirm to set new altitude. Clicking Cancel " +
-                "will keep the altitude as it had been set.");
+        if(flag.equals("OLD")){
+            altDialog.setMessage("Click Confirm to set new altitude. Clicking Cancel " +
+                    "will keep the altitude as it had been set.");
+            altDialog.setTitle("Adjust Altitude");
+        }
         altDialog.show();
+    }
+
+    public boolean outsideBounds(LatLng latLng){
+        Point currentPoint = mMap.getProjection().toScreenLocation(latLng);
+        int x = currentPoint.x;
+        int y = currentPoint.y;
+
+        //outermost limits
+        if(x<245 || x>1260 || y<140 || y>930) return true;
+
+        //bottom left top right cutouts
+        if((x<715 && y>720) || (x>838 && y<580)) return true;
+
+        //lowermost wall
+        if(x<725 && x>665 && y>535) return true;
+
+        //corner of dynamic room
+        if(x>655 && x<720 && y>345 && y< 390) return true;
+
+        //control box
+        if(x>370 && x<410 && y<170) return true;
+
+        //edge by the common room
+        if(x<265 && y>393) return true;
+
+        return false;
     }
 
 }

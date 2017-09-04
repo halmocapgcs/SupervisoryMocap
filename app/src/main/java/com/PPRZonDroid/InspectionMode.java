@@ -250,10 +250,10 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 				if(event.getAction() == MotionEvent.ACTION_DOWN){
 					mode = 1;
 					if(leftPad.getRegion(event) == RIGHT){
-						yaw = 15;
+						yaw = 10;
 					}
 					else if(leftPad.getRegion(event) == LEFT){
-						yaw = -15;
+						yaw = -10;
 					}
 					else if(leftPad.getRegion(event) == UP){
 						throttle = 84;

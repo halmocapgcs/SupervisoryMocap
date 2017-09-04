@@ -161,19 +161,6 @@
                 android:layout_marginRight="20dp"
                 android:background="@drawable/buttonshape"
                 />
-
-            <Button
-                android:id="@+id/land_at_origin"
-
-                android:text="Land at Origin"
-                android:textColor="#fff8f9"
-                android:textSize="22sp"
-
-                android:layout_width="match_parent"
-                android:layout_height="55dp"
-                android:layout_marginRight="20dp"
-                android:background="@drawable/buttonshape"
-                />
         </LinearLayout>
 
     </FrameLayout>
