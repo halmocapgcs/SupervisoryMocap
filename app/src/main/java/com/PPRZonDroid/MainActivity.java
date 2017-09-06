@@ -556,7 +556,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       mMap.moveCamera(CameraUpdateFactory.newCameraPosition(rotated));
 
       //Create the ground overlay
-      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.pictfinaldoor);
+      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.experimentzone);
       GroundOverlay trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
               .position(labOrigin, (float) 77.15)   //note if you change size of map you need to redo this val too
@@ -639,7 +639,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 pathPoints.addLast(newMarker.getPosition());
 				path = mMap.addPolyline(new PolylineOptions()
                         .addAll(pathPoints)
-						.width(7)
+						.width(9)
 						.color(Color.RED));
 			}
 			else{
@@ -1705,7 +1705,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         if(x>370 && x<410 && y<170) return true;
 
         //edge by the common room
-        if(x<265 && y>393) return true;
+        if(x<265 && y>375) return true;
 
         return false;
     }

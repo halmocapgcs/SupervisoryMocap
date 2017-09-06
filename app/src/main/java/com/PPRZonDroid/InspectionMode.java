@@ -152,8 +152,8 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 			mLibVLC = new LibVLC();
 			mLibVLC.setAout(mLibVLC.AOUT_AUDIOTRACK);
 			mLibVLC.setVout(mLibVLC.VOUT_ANDROID_SURFACE);
-			mLibVLC.setHardwareAcceleration(LibVLC.HW_ACCELERATION_FULL);
-
+			mLibVLC.setHardwareAcceleration(LibVLC.HW_ACCELERATION_AUTOMATIC);
+			mLibVLC.setChroma("YV12");
 
 			mLibVLC.init(getApplicationContext());
 		} catch (LibVlcException e){
@@ -168,8 +168,10 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 		List<String> options_list = new ArrayList<String>(Arrays.asList(temp_options));
 
 
-		options_list.set(0,":file-caching=2000");
-		options_list.set(1,":network-caching=150");
+		options_list.add(":file-caching=2000");
+		options_list.add(":network-caching=1");
+		options_list.add(":clock-jitter=0");
+		options_list.add("--clock-synchro=1");
 		new_options = options_list.toArray(new String[options_list.size()]);
 
 		mLibVLC.playMRL(mMediaUrl,new_options);
