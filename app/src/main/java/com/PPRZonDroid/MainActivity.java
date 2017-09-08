@@ -1616,7 +1616,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
         //create altitude adjustment and set default accordingly
         SeekBar altSeek = new SeekBar(this);
-        altSeek.setMax(25);
+        altSeek.setMax(22);
         if(flag.equals("NEW")) {
 			if(mrkIndex>0) {
 				altSeek.setProgress((int) (10*Double.parseDouble(mMarkerHead.get(mrkIndex - 1).getSnippet())));
