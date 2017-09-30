@@ -31,6 +31,12 @@
             android:background="#424242"
             android:id="@+id/InspectionMode"/>
 
+        <Button
+            android:id="@+id/map_swap"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@android:color/transparent" />
+
         <LinearLayout
             android:orientation="horizontal"
             android:id="@+id/topFlightBar"

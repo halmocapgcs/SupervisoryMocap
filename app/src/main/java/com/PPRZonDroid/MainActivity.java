@@ -171,7 +171,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	private ImageView batteryLevelView;
 
 	private Button Button_ConnectToServer, Button_LaunchInspectionMode;
-  	public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere;
+  	public Button Button_Takeoff, Button_Execute, Button_Pause, Button_LandHere, map_swap;
 
   	private ToggleButton ChangeVisibleAcButon;
   	private DrawerLayout mDrawerLayout;
@@ -192,6 +192,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	public Polyline path;
   	public boolean pathInitialized = false;
     public LatLng originalPosition;
+    private int mapIndex = 0;
+    private int[] mapImages = {R.drawable.modulezone_supervisory, R.drawable.trainingroom, R.drawable.experimentzone};
+    private GroundOverlay trueMap;
 
   	//Establish static socket to be used across activities
   	static DatagramSocket sSocket = null;
@@ -205,12 +208,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
   	private boolean DisableScreenDim;
   	private boolean DisplayFlightInfo;
-
-	//currently unused
-  	private CountDownTimer BL_CountDown;
-  	private int BL_CountDownTimerValue;
-  	private int JumpToBlock;
-  	private int BL_CountDownTimerDuration;
 
   	private ArrayList<Model> generateDataAc() {
     	AcList = new ArrayList<Model>();
@@ -306,6 +303,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 	  	Button_Execute = (Button) findViewById(R.id.execute_flightplan);
 	  	Button_Pause = (Button) findViewById(R.id.pause_flightplan);
 	  	Button_LandHere = (Button) findViewById(R.id.land_here);
+        map_swap = (Button) findViewById(R.id.map_swap);
 
 	  	Button_Takeoff.setOnTouchListener(new View.OnTouchListener() {
 		  @Override
@@ -346,6 +344,16 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 			  return false;
 		  }
 	  });
+
+        map_swap.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if(++mapIndex > 2) mapIndex = 0;
+                BitmapDescriptor newLabImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
+                trueMap.setImage(newLabImage);
+                return false;
+            }
+        });
 
 	  	ChangeVisibleAcButon = (ToggleButton) findViewById(R.id.toggleButtonVisibleAc);
 	  	ChangeVisibleAcButon.setSelected(false);
@@ -556,8 +564,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       mMap.moveCamera(CameraUpdateFactory.newCameraPosition(rotated));
 
       //Create the ground overlay
-      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(R.drawable.experimentzone);
-      GroundOverlay trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
+      BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
+      trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
               .position(labOrigin, (float) 77.15)   //note if you change size of map you need to redo this val too
               .bearing(90.0f));
@@ -1080,11 +1088,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       if (DEBUG) Log.d("PPRZ_info", "App_password changed : " + AppSettings.getString(Control_Pass , ""));
     }
 
-    if (key.equals(BLOCK_C_TIMEOUT)) {
-      BL_CountDownTimerDuration = Integer.parseInt(AppSettings.getString(BLOCK_C_TIMEOUT, "3"))*1000;
-      //setup_counter();
-      if (DEBUG) Log.d("PPRZ_info", "Clock change timeout changed : " + AppSettings.getString(BLOCK_C_TIMEOUT , ""));
-    }
 
     if (key.equals(DISABLE_SCREEN_DIM)) {
       DisableScreenDim = AppSettings.getBoolean(DISABLE_SCREEN_DIM, true);
