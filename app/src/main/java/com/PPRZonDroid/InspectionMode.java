@@ -218,7 +218,9 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 		return -1;
 	}
 
-
+	private boolean belowAltitude(){
+		return (Double.parseDouble(AC_DATA.AircraftData[0].RawAltitude)  <= 1.5);
+	}
 
 	private void setup_telemetry_class() {
 
@@ -249,7 +251,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				AC_DATA.inspecting = true;
-				if(event.getAction() == MotionEvent.ACTION_DOWN){
+				if(event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE){
 					mode = 1;
 					if(leftPad.getRegion(event) == RIGHT){
 						yaw = 10;
@@ -257,8 +259,8 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 					else if(leftPad.getRegion(event) == LEFT){
 						yaw = -10;
 					}
-					else if(leftPad.getRegion(event) == UP){
-						throttle = 84;
+					else if(leftPad.getRegion(event) == UP && belowAltitude()){
+						throttle = 83;
 					}
 					else if(leftPad.getRegion(event) == DOWN){
 						throttle = 42;
