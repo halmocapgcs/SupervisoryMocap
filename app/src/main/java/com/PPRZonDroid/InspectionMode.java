@@ -126,11 +126,6 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 	public int percent = 100;
 	public int AcId = 31;
 
-	int RIGHT = 1;
-	int UP = 2;
-	int LEFT = 3;
-	int DOWN = 4;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -253,16 +248,16 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 				AC_DATA.inspecting = true;
 				if(event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE){
 					mode = 1;
-					if(leftPad.getRegion(event) == RIGHT){
+					if(leftPad.getRegion(event) == ThumbPad.RIGHT){
 						yaw = 10;
 					}
-					else if(leftPad.getRegion(event) == LEFT){
+					else if(leftPad.getRegion(event) == ThumbPad.LEFT){
 						yaw = -10;
 					}
-					else if(leftPad.getRegion(event) == UP && belowAltitude()){
+					else if(leftPad.getRegion(event) == ThumbPad.UP && belowAltitude()){
 						throttle = 83;
 					}
-					else if(leftPad.getRegion(event) == DOWN){
+					else if(leftPad.getRegion(event) == ThumbPad.DOWN){
 						throttle = 42;
 					}
 				}
