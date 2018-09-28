@@ -268,16 +268,16 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 				AC_DATA.inspecting = true;
 				if(event.getAction() == MotionEvent.ACTION_DOWN){
 					mode = 1;
-					if(rightPad.getRegion(event) == RIGHT){
+					if(rightPad.getRegion(event) == ThumbPad.RIGHT){
 						roll = 15;
 					}
-					else if(rightPad.getRegion(event) == LEFT){
+					else if(rightPad.getRegion(event) == ThumbPad.LEFT){
 						roll = -15;
 					}
-					else if(rightPad.getRegion(event) == UP){
+					else if(rightPad.getRegion(event) == ThumbPad.UP){
 						pitch = -15;
 					}
-					else if(rightPad.getRegion(event) == DOWN){
+					else if(rightPad.getRegion(event) == ThumbPad.DOWN){
 						pitch = 15;
 					}
 				}
