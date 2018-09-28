@@ -871,36 +871,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     AC_DATA.ViewChanged = false;
   }
 
-	//unused, would normally work in conjunction with flightplan waypoints being moved on google map
-//  private void waypoint_changed(String WpID, LatLng NewPosition, String DialogTitle) {
-//
-//    //Find the marker
-//
-//    int AcInd;
-//    int MarkerInd = 1;
-//    for (AcInd = 0; AcInd <= AC_DATA.IndexEnd; AcInd++) {     //Find waypoint which is changed!
-//
-//
-//      for (MarkerInd = 1; (MarkerInd < AC_DATA.AircraftData[AcInd].NumbOfWps - 1); MarkerInd++) {
-//
-//        if ((null == AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker))
-//          continue; //we dont have data for this wp yet
-//        //Log.d("PPRZ_info", "Marker drop!!  Searching for AC= " + AcInd + " wpind:" + MarkerInd + " mid: "+AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId());
-//        //Search the marker
-//
-//        if (AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId().equals(WpID)) {
-//          //Log.d("PPRZ_info", "Marker found AC= " + AcInd + " wpind:" + MarkerInd);
-//          NewPosition =  convert_to_google(NewPosition);
-//          AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpPosition = NewPosition;
-//
-//          return;
-//        }
-//
-//      }
-//    }
-//
-//  }
-
   private boolean checkReady() {
     if (mMap == null) {
       Toast.makeText(this, R.string.map_not_ready, Toast.LENGTH_SHORT).show();
@@ -932,21 +902,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //getMenuInflater().inflate(R.menu.main, menu);
     return true;
   }
-
-//  @Override
-//  public boolean onOptionsItemSelected(MenuItem item) {
-//    // Handle action bar item clicks here. The action bar will
-//    // automatically handle clicks on the Home/Up button, so long
-//    // as you specify a parent activity in AndroidManifest.xml.
-//    switch (item.getItemId()) {
-//      case R.id.action_settings:
-//
-//        Intent intent = new Intent(this, SettingsActivity.class);
-//        startActivity(intent);
-//        return true;
-//    }
-//    return super.onOptionsItemSelected(item);
-//  }
 
   @Override
   protected void onStop() {
