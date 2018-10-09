@@ -220,6 +220,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	}
 
   	private Thread mTCPthread;
+  	private EventLogger logger;
 
   	/**
   	 * Setup TCP and UDP connections of Telemetry class
@@ -242,6 +243,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     	//AC_DATA.tcp_connection();
     	//AC_DATA.mTcpClient.setup_tcp();
     	AC_DATA.setup_udp();
+    	logger = new EventLogger();
   	}
 
   	/**
@@ -943,6 +945,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        logger.closeLogger();
     }
 
   @Override
