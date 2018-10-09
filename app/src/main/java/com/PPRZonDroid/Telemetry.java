@@ -176,6 +176,7 @@ public class Telemetry {
         AircraftData[AcIndex].ApMode = ParsedData[3];
         AircraftData[AcIndex].GpsMode = ParsedData[7];
         AircraftData[AcIndex].StateFilterMode = ParsedData[10];
+        AircraftData[AcIndex].RawFlightTime = ParsedData[9];
         Long FlightTime = Long.parseLong(ParsedData[9]);
         Long Hours, Minutes;
 
@@ -700,6 +701,7 @@ public class Telemetry {
     String AirSpeed = "N/A";
     boolean ApStatusChanged = false;
     String FlightTime;
+    String RawFlightTime;
     String ApMode;
     String GpsMode;
     String StateFilterMode;

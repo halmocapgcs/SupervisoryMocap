@@ -24,7 +24,7 @@ public class EventLogger implements Serializable{
     public static final String WAYPOINT_CREATE = "Waypoint Created";
     public static final String WAYPOINT_DELETE = "Waypoint Deleted";
     public static final String WAYPOINT_MOVE = "Waypoint Move";
-    public static final String WAYPOIN_ALTITUDE_MOVE = "Waypoint Altitude Adjusted";
+    public static final String WAYPOINT_ALTITUDE_ADJUST = "Waypoint Altitude Adjusted";
 
     private FileWriter writer;
 
@@ -45,7 +45,6 @@ public class EventLogger implements Serializable{
     private void buildFileHeaders(){
         try {
             writer.append("Flight Time,");
-            writer.append("Time,");
             writer.append("Altitude (m),");
             writer.append("X-Position (m),");
             writer.append("Y-Position (m),");
@@ -59,23 +58,17 @@ public class EventLogger implements Serializable{
     }
 
     protected void logEvent(
-            float flightTime,
-            float currentTime,
-            float altitude,
-            float x,
-            float y,
+            Telemetry.AirCraft aircraft,
             String event,
             float eventParameter) {
         try {
-            writer.append(Float.toString(flightTime));
+            writer.append(aircraft.RawFlightTime);
             writer.append(",");
-            writer.append(Float.toString(currentTime));
+            writer.append(aircraft.RawFlightTime);
             writer.append(",");
-            writer.append(Float.toString(altitude));
+            writer.append(Double.toString(aircraft.Position.latitude));
             writer.append(",");
-            writer.append(Float.toString(x));
-            writer.append(",");
-            writer.append(Float.toString(y));
+            writer.append(Double.toString(aircraft.Position.longitude));
             writer.append(",");
             writer.append(event);
             writer.append(",");

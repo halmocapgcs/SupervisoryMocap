@@ -283,7 +283,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public void onClick(View view) {
 			  if(!isClicked) {
 				  isClicked = true;
-                  //todo logging
+                  logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_LAUNCH, -1);
                   send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 9, true);
 				  new CountDownTimer(1000, 100) {
 					  @Override
@@ -313,8 +313,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-//			  logger.logEvent(AC_DATA.AircraftData[0].);
-              //TODO logging
+			  logger.logEvent(AC_DATA.AircraftData[0], EventLogger.TAKEOFF, -1);
 			  set_selected_block(0,false);
 			  Button_Takeoff.setSelected(true);
 			  return false;
@@ -325,7 +324,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  //todo logging
+              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.EXECUTE, -1);
 			  Button_Execute.setSelected(true);
 			  set_selected_block(1,false);
 			  return false;
@@ -336,7 +335,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-              //todo logging
+              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.PAUSE, -1);
               Button_Pause.setSelected(true);
 			  set_selected_block(2, false);
 			  return false;
@@ -347,7 +346,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-              //todo logging
+              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.LANDING, -1);
               set_selected_block(3,false);
 			  Button_LandHere.setSelected(true);
 			  return false;
@@ -585,7 +584,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
           @Override
           public void onMarkerDragStart(Marker marker) {
-              //todo logging
+              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_MOVE, -1);
               originalPosition = marker.getPosition();
               int index = mMarkerHead.indexOf(marker);
               pathPoints.set(index + 1, marker.getPosition());
@@ -640,7 +639,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         @Override
         public void onMapLongClick(LatLng latLng) {
             if(outsideBounds(latLng)) return;
-            //todo logging
             Marker newMarker = mMap.addMarker(new MarkerOptions()
                 .position(latLng)
                 .draggable(true)
@@ -649,6 +647,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 .snippet(Float.toString(1.0f))
                 .icon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
                     "red", "?", AC_DATA.GraphicsScaleFactor))));
+            logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_CREATE, -1);
             launch_altitude_dialog(newMarker, "NEW");
 
             mMarkerHead.add(newMarker);
@@ -674,7 +673,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         public boolean onMarkerClick(final Marker marker){
             //if statement prevents removal of origin and drone icon
             if(!marker.getSnippet().equals("STATIC")) {
-                //todo logging
                 AlertDialog adjustDialog = new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Adjust Waypoint")
                         .setMessage("Click below to adjust the altitude or remove the waypoint")
@@ -1567,6 +1565,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                         mMarkerHead.remove(index);
                         pathPoints.remove(index + 1);
                         adjust_marker_lines();
+                        logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_DELETE, -1);
                     }
                 })
                 .setNegativeButton("Cancel", null)
@@ -1641,6 +1640,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        if(mFlag.equals("OLD")){
+                            logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_ALTITUDE_ADJUST, -1);
+                        }
                         altMarker.setSnippet(altVal.getText().toString());
                         lastAltitude = Double.parseDouble(altVal.getText().toString());
                         altMarker.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(

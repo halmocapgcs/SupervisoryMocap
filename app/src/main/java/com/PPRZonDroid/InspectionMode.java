@@ -228,8 +228,8 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				AC_DATA.inspecting = true;
-				if(event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE){
-					//todo logging
+				if(event.getAction() == MotionEvent.ACTION_DOWN){
+					logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_START, leftPad.getRegion(event));
 					mode = 1;
 					if(leftPad.getRegion(event) == ThumbPad.RIGHT){
 						yaw = 10;
@@ -245,7 +245,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 					}
 				}
 				else if(event.getAction()== MotionEvent.ACTION_UP) {
-					//todo logging
+					logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_END, leftPad.getRegion(event));
 					yaw = 0;
 					throttle = 63;
 					new CountDownTimer(1000, 100) {
@@ -271,7 +271,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 			public boolean onTouch(View v, MotionEvent event) {
 				AC_DATA.inspecting = true;
 				if(event.getAction() == MotionEvent.ACTION_DOWN){
-					//todo logging
+					logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_START, rightPad.getRegion(event));
 					mode = 1;
 					if(rightPad.getRegion(event) == ThumbPad.RIGHT){
 						roll = 15;
@@ -287,7 +287,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 					}
 				}
 				else if(event.getAction()== MotionEvent.ACTION_UP){
-					//todo logging
+					logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_END, rightPad.getRegion(event));
 					pitch = 0;
 					roll = 0;
 					new CountDownTimer(1000, 100) {
@@ -333,7 +333,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 
 								@Override
 								public void onFinish() {
-									//todo logging
+									logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_CLOSE, -1);
 									AC_DATA.inspecting = false;
 									AC_DATA.mTcpClient.sendMessage("removeme");
 									//TelemetryAsyncTask.isCancelled();
