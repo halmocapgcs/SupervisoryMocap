@@ -6,19 +6,32 @@ import android.util.Log;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * Created by bwelton on 9/28/18.
  */
 
-public class EventLogger {
-    private File logFile;
+public class EventLogger implements Serializable{
+    public static final String TAKEOFF = "Takeoff";
+    public static final String LANDING = "Land";
+    public static final String EXECUTE = "Flightplan Executed";
+    public static final String PAUSE = "Flightplan Paused";
+    public static final String INSPECTION_LAUNCH = "Inspection Mode Launched";
+    public static final String INSPECTION_CLOSE = "Inspection Mode Closed";
+    public static final String INSPECTION_COMMAND_START = "Inspection Command Started";
+    public static final String INSPECTION_COMMAND_END = "Inspection Command Ended";
+    public static final String WAYPOINT_CREATE = "Waypoint Created";
+    public static final String WAYPOINT_DELETE = "Waypoint Deleted";
+    public static final String WAYPOINT_MOVE = "Waypoint Move";
+    public static final String WAYPOIN_ALTITUDE_MOVE = "Waypoint Altitude Adjusted";
+
     private FileWriter writer;
 
     public EventLogger(){
         String filename = "FILLERNAME"; //TODO make sure user is selecting the correct filename
         File root = Environment.getExternalStorageDirectory();
-        logFile = new File(root + filename);
+        File logFile = new File(root + filename);
         try {
             writer = new FileWriter(logFile);
             buildFileHeaders();
@@ -45,7 +58,7 @@ public class EventLogger {
         }
     }
 
-    public void logEvent(
+    protected void logEvent(
             float flightTime,
             float currentTime,
             float altitude,
@@ -75,7 +88,7 @@ public class EventLogger {
         }
     }
 
-    public void closeLogger(){
+    protected void closeLogger(){
         try {
             writer.close();
         } catch (IOException e) {

@@ -283,7 +283,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public void onClick(View view) {
 			  if(!isClicked) {
 				  isClicked = true;
-				  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 9, true);
+                  //todo logging
+                  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 9, true);
 				  new CountDownTimer(1000, 100) {
 					  @Override
 					  public void onTick(long l) {
@@ -294,6 +295,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 						  String url = "file:///sdcard/DCIM/video.sdp";
 						  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
 						  inspect.putExtra("videoUrl", url);
+						  inspect.putExtra("EventLogger", logger);
 						  startActivityForResult(inspect, InspectionPosition);
 					  }
 				  }.start();
@@ -311,6 +313,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
+//			  logger.logEvent(AC_DATA.AircraftData[0].);
+              //TODO logging
 			  set_selected_block(0,false);
 			  Button_Takeoff.setSelected(true);
 			  return false;
@@ -321,6 +325,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
+			  //todo logging
 			  Button_Execute.setSelected(true);
 			  set_selected_block(1,false);
 			  return false;
@@ -331,7 +336,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  Button_Pause.setSelected(true);
+              //todo logging
+              Button_Pause.setSelected(true);
 			  set_selected_block(2, false);
 			  return false;
 		  }
@@ -341,7 +347,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  set_selected_block(3,false);
+              //todo logging
+              set_selected_block(3,false);
 			  Button_LandHere.setSelected(true);
 			  return false;
 		  }
@@ -578,6 +585,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
           @Override
           public void onMarkerDragStart(Marker marker) {
+              //todo logging
               originalPosition = marker.getPosition();
               int index = mMarkerHead.indexOf(marker);
               pathPoints.set(index + 1, marker.getPosition());
@@ -632,6 +640,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         @Override
         public void onMapLongClick(LatLng latLng) {
             if(outsideBounds(latLng)) return;
+            //todo logging
             Marker newMarker = mMap.addMarker(new MarkerOptions()
                 .position(latLng)
                 .draggable(true)
@@ -665,6 +674,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         public boolean onMarkerClick(final Marker marker){
             //if statement prevents removal of origin and drone icon
             if(!marker.getSnippet().equals("STATIC")) {
+                //todo logging
                 AlertDialog adjustDialog = new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Adjust Waypoint")
                         .setMessage("Click below to adjust the altitude or remove the waypoint")
