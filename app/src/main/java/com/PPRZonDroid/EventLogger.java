@@ -29,9 +29,8 @@ public class EventLogger implements Serializable{
     private FileWriter writer;
 
     public EventLogger(){
-        String filename = "FILLERNAME"; //TODO make sure user is selecting the correct filename
-        File root = Environment.getExternalStorageDirectory();
-        File logFile = new File(root + filename);
+        String filename = "FILLERNAME.csv"; //TODO make sure user is selecting the correct filename
+        File logFile = new File(Environment.getExternalStorageDirectory() + filename);
         try {
             writer = new FileWriter(logFile);
             buildFileHeaders();
