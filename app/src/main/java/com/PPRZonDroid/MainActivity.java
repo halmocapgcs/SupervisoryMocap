@@ -92,11 +92,14 @@ import android.view.Menu;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -120,6 +123,7 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 import static java.lang.Double.parseDouble;
 //import android.support.v7.app.AppCompatActivity;
@@ -243,7 +247,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     	//AC_DATA.tcp_connection();
     	//AC_DATA.mTcpClient.setup_tcp();
     	AC_DATA.setup_udp();
-    	logger = new EventLogger();
   	}
 
   	/**
@@ -1001,6 +1004,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     setup_telemetry_class();
     TelemetryAsyncTask = new ReadTelemetry();
     TelemetryAsyncTask.execute();
+
+    launch_file_dialog();
   }
 
   private ReadTelemetry TelemetryAsyncTask;
@@ -1655,6 +1660,46 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
             altDialog.setTitle("Adjust Altitude");
         }
         altDialog.show();
+    }
+
+    private void launch_file_dialog(){
+        AlertDialog.Builder fileDialog = new AlertDialog.Builder(MainActivity.this);
+        LinearLayout dialogLayout = new LinearLayout(this);
+        dialogLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+        RelativeLayout centeredLayout = new RelativeLayout(this);
+        centeredLayout.setHorizontalGravity(RelativeLayout.CENTER_HORIZONTAL);
+        centeredLayout.addView(dialogLayout);
+
+        final Spinner modules = new Spinner(this);
+        final List<String> moduleSelections = new ArrayList<>();
+        moduleSelections.add("Module_3");
+        moduleSelections.add("Module_4");
+        moduleSelections.add("Module_5");
+        moduleSelections.add("Module_6");
+        moduleSelections.add("Checkride");
+        moduleSelections.add("Experiment");
+
+        ArrayAdapter<String> dataAdapter =
+                new ArrayAdapter<String>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        moduleSelections);
+        modules.setAdapter(dataAdapter);
+        dialogLayout.addView(modules);
+
+        fileDialog.setTitle("Choose Experiment Parameters")
+                .setMessage("Choose the user ID, the module being tested, and the experimental group.")
+                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Log.d("DroneLogging", "CLICK");
+                        logger = new EventLogger(modules.getSelectedItem() + ".csv");
+                    }
+                }).create();
+        fileDialog.setView(centeredLayout);
+        fileDialog.show();
+
     }
 
     public boolean outsideBounds(LatLng latLng){
