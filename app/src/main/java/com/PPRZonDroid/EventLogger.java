@@ -26,13 +26,18 @@ public class EventLogger implements Serializable{
     public static final String WAYPOINT_MOVE = "Waypoint Move";
     public static final String WAYPOINT_ALTITUDE_ADJUST = "Waypoint Altitude Adjusted";
 
+    private static final String SD_PATH = "/storage/79CA-1EE6/Android/data/com.PPRZonDroid/files/";
+
     private FileWriter writer;
 
     public EventLogger(String filename){
-        File logFile = new File(Environment.getExternalStorageDirectory() + filename);
-        Log.d("DroneLogging", Environment.getExternalStorageDirectory() + filename);
         try {
-            writer = new FileWriter(logFile);
+            File path = new File(SD_PATH);
+            if(!path.exists()){
+                path.mkdir();
+            }
+            writer = new FileWriter(
+                    new File(SD_PATH + filename));
             buildFileHeaders();
         } catch (IOException e) {
             Log.d("DroneLogging", "Failed to initialize the file writer.");
@@ -43,7 +48,8 @@ public class EventLogger implements Serializable{
 
     private void buildFileHeaders(){
         try {
-            writer.append("Flight Time,");
+            writer.append("Current Time (s),");
+            writer.append("Flight Time (s),");
             writer.append("Altitude (m),");
             writer.append("X-Position (m),");
             writer.append("Y-Position (m),");
@@ -61,9 +67,11 @@ public class EventLogger implements Serializable{
             String event,
             float eventParameter) {
         try {
-            writer.append(aircraft.RawFlightTime);
+            writer.append(Long.toString(System.currentTimeMillis()/1000));
             writer.append(",");
             writer.append(aircraft.RawFlightTime);
+            writer.append(",");
+            writer.append(aircraft.RawAltitude);
             writer.append(",");
             writer.append(Double.toString(aircraft.Position.latitude));
             writer.append(",");
@@ -73,6 +81,7 @@ public class EventLogger implements Serializable{
             writer.append(",");
             writer.append(Float.toString(eventParameter));
             writer.append("\n");
+            writer.flush();
 
         } catch (IOException e) {
             Log.d("DroneLogging", "Failed to append a new line of data.");
@@ -82,6 +91,7 @@ public class EventLogger implements Serializable{
 
     protected void closeLogger(){
         try {
+            writer.flush();
             writer.close();
         } catch (IOException e) {
             Log.d("DroneLogging", "Failed to close the file writer.");

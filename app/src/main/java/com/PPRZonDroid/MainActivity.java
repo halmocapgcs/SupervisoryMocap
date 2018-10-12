@@ -97,6 +97,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.NumberPicker;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -126,7 +127,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static java.lang.Double.parseDouble;
-//import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 
 
@@ -146,6 +146,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
   	public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
   	public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
+
+  	private static final int MAX_USER_ID = 42;
 
 	public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   	boolean ShowOnlySelected = true;
@@ -1666,11 +1668,37 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         AlertDialog.Builder fileDialog = new AlertDialog.Builder(MainActivity.this);
         LinearLayout dialogLayout = new LinearLayout(this);
         dialogLayout.setOrientation(LinearLayout.HORIZONTAL);
+        dialogLayout.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        RelativeLayout centeredLayout = new RelativeLayout(this);
-        centeredLayout.setHorizontalGravity(RelativeLayout.CENTER_HORIZONTAL);
-        centeredLayout.addView(dialogLayout);
+        // Create a drop down menu of all possible user ids
+        final Spinner userId = new Spinner(this);
+        final List<String> userIdSelections = new ArrayList<>();
+        for(int i = 1; i<MAX_USER_ID; i++){
+            userIdSelections.add(Integer.toString(i));
+        }
 
+        ArrayAdapter<String> userIdDataAdapter =
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        userIdSelections);
+        userId.setAdapter(userIdDataAdapter);
+
+        // Create a drop down menu of the experimental groups
+        final Spinner experimentalGroups = new Spinner(this);
+        final List<String> groupSelections = new ArrayList<>();
+        groupSelections.add("Group_1");
+        groupSelections.add("Group_2");
+        groupSelections.add("Group_3");
+
+        ArrayAdapter<String> groupDataAdapter =
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        groupSelections);
+        experimentalGroups.setAdapter(groupDataAdapter);
+
+        // Create a drop down menu of the modules
         final Spinner modules = new Spinner(this);
         final List<String> moduleSelections = new ArrayList<>();
         moduleSelections.add("Module_3");
@@ -1680,12 +1708,15 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         moduleSelections.add("Checkride");
         moduleSelections.add("Experiment");
 
-        ArrayAdapter<String> dataAdapter =
-                new ArrayAdapter<String>(
+        ArrayAdapter<String> moduleDataAdapter =
+                new ArrayAdapter<>(
                         this,
                         android.R.layout.simple_spinner_dropdown_item,
                         moduleSelections);
-        modules.setAdapter(dataAdapter);
+        modules.setAdapter(moduleDataAdapter);
+
+        dialogLayout.addView(userId);
+        dialogLayout.addView(experimentalGroups);
         dialogLayout.addView(modules);
 
         fileDialog.setTitle("Choose Experiment Parameters")
@@ -1693,11 +1724,13 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        Log.d("DroneLogging", "CLICK");
-                        logger = new EventLogger(modules.getSelectedItem() + ".csv");
+                        logger = new EventLogger(
+                                userId.getSelectedItem() + "_" +
+                                        experimentalGroups.getSelectedItem() + "_" +
+                                        modules.getSelectedItem() + ".csv");
                     }
                 }).create();
-        fileDialog.setView(centeredLayout);
+        fileDialog.setView(dialogLayout);
         fileDialog.show();
 
     }
