@@ -13,18 +13,18 @@ import java.io.Serializable;
  */
 
 public class EventLogger implements Serializable{
-    public static final String TAKEOFF = "Takeoff";
-    public static final String LANDING = "Land";
-    public static final String EXECUTE = "Flightplan Executed";
-    public static final String PAUSE = "Flightplan Paused";
-    public static final String INSPECTION_LAUNCH = "Inspection Mode Launched";
-    public static final String INSPECTION_CLOSE = "Inspection Mode Closed";
-    public static final String INSPECTION_COMMAND_START = "Inspection Command Started";
-    public static final String INSPECTION_COMMAND_END = "Inspection Command Ended";
-    public static final String WAYPOINT_CREATE = "Waypoint Created";
-    public static final String WAYPOINT_DELETE = "Waypoint Deleted";
-    public static final String WAYPOINT_MOVE = "Waypoint Move";
-    public static final String WAYPOINT_ALTITUDE_ADJUST = "Waypoint Altitude Adjusted";
+    public static final int TAKEOFF = 0;
+    public static final int LANDING = 1;
+    public static final int EXECUTE = 2;
+    public static final int PAUSE = 3;
+    public static final int INSPECTION_LAUNCH = 4;
+    public static final int INSPECTION_CLOSE = 5;
+    public static final int INSPECTION_COMMAND_START = 6;
+    public static final int INSPECTION_COMMAND_END = 7;
+    public static final int WAYPOINT_CREATE = 8;
+    public static final int WAYPOINT_DELETE = 9;
+    public static final int WAYPOINT_MOVE = 10;
+    public static final int WAYPOINT_ALTITUDE_ADJUST = 11;
 
     private static final String SD_PATH = "/storage/79CA-1EE6/Android/data/com.PPRZonDroid/files/";
 
