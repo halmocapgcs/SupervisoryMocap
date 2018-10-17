@@ -281,12 +281,11 @@ public class Telemetry {
 		  AircraftData[AcIndex].Heading = ParsedData[5];
 		  AircraftData[AcIndex].Position = new LatLng(Double.parseDouble(ParsedData[6]), Double.parseDouble(ParsedData[7]));
 		  AircraftData[AcIndex].Speed = ParsedData[8].substring(0, (ParsedData[8].indexOf(".") + 2));
-		  AircraftData[AcIndex].RawAltitude = ParsedData[10];
 		  AircraftData[AcIndex].AGL = ParsedData[12].substring(0, ParsedData[12].indexOf("."));
 
           Double altVal = Double.parseDouble(AircraftData[AcIndex].RawAltitude) + 0.3;
-          AircraftData[AcIndex].Altitude = altVal.toString();
-          AircraftData[AcIndex].Altitude = AircraftData[AcIndex].Altitude.substring(0, AircraftData[AcIndex].Altitude.indexOf(".") + 2) + " m";
+          AircraftData[AcIndex].RawAltitude = altVal.toString();
+          AircraftData[AcIndex].Altitude = altVal.toString().substring(0, altVal.toString().indexOf(".") + 2) + " m";
 
         String BufAirspeed= ParsedData[15].substring(0, ParsedData[15].indexOf(".") + 1);
 
