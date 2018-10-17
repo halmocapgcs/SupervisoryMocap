@@ -3,6 +3,10 @@ package com.PPRZonDroid;
 import android.os.Environment;
 import android.util.Log;
 
+import com.google.android.gms.maps.model.LatLng;
+
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -54,7 +58,13 @@ public class EventLogger implements Serializable{
             writer.append("X-Position (m),");
             writer.append("Y-Position (m),");
             writer.append("Event,");
-            writer.append("Event Parameter\n");
+            writer.append("Manual Command,");
+            writer.append("Waypoint Start X,");
+            writer.append("Waypoint Start Y,");
+            writer.append("Waypoint Start Altitude,");
+            writer.append("Waypoint End X,");
+            writer.append("Waypoint End Y,");
+            writer.append("Waypoint End Altitude\n");
 
         } catch (IOException e) {
             Log.d("DroneLogging", "Failed to initialize the headers");
@@ -65,7 +75,70 @@ public class EventLogger implements Serializable{
     protected void logEvent(
             Telemetry.AirCraft aircraft,
             int event,
-            float eventParameter) {
+            float manualCommand) {
+        try {
+            printRequiredInformation(aircraft, event, manualCommand);
+            writer.append("-,"); //waypoint start x
+            writer.append("-,"); //waypoint start y
+            writer.append("-,"); //waypoint start alt
+            writer.append("-,"); //waypoint end x
+            writer.append("-,"); //waypoint end y
+            writer.append("-,"); //waypoint end alt
+            writer.flush();
+
+        } catch (IOException e) {
+            Log.d("DroneLogging", "Failed to append a new line of data.");
+            e.printStackTrace();
+        }
+    }
+
+    protected void logWaypointEvent(
+            Telemetry.AirCraft aircraft,
+            int event,
+            float manualCommand,
+            @Nullable LatLng startPosition,
+            @Nullable LatLng endPosition,
+            @Nullable String startAltitude,
+            @Nullable String endAltitude) {
+        try {
+            printRequiredInformation(aircraft, event, manualCommand);
+
+            if(startPosition != null) {
+                writer.append(Double.toString(startPosition.latitude));
+                writer.append(",");
+                writer.append(Double.toString(startPosition.longitude));
+                writer.append(",");
+            }else{
+                writer.append("-,");
+                writer.append("-,");
+            }
+            writer.append(startAltitude != null ? startAltitude : "-,");
+            writer.append(",");
+
+            if(endPosition != null) {
+                writer.append(Double.toString(endPosition.latitude));
+                writer.append(",");
+                writer.append(Double.toString(endPosition.longitude));
+                writer.append(",");
+            }else{
+                writer.append("-,");
+                writer.append("-,");
+            }
+            writer.append(endAltitude != null ? endAltitude : "-");
+            writer.append("\n");
+
+            writer.flush();
+
+        } catch (IOException e) {
+            Log.d("DroneLogging", "Failed to append a new line of data.");
+            e.printStackTrace();
+        }
+    }
+
+    private void printRequiredInformation(
+            Telemetry.AirCraft aircraft,
+            int event,
+            float manualCommand) {
         try {
             writer.append(Long.toString(System.currentTimeMillis()/1000));
             writer.append(",");
@@ -79,16 +152,14 @@ public class EventLogger implements Serializable{
             writer.append(",");
             writer.append(Integer.toString(event));
             writer.append(",");
-            writer.append(Float.toString(eventParameter));
+            writer.append(Float.toString(manualCommand));
             writer.append("\n");
-            writer.flush();
 
         } catch (IOException e) {
             Log.d("DroneLogging", "Failed to append a new line of data.");
             e.printStackTrace();
         }
     }
-
     protected void closeLogger(){
         try {
             writer.flush();

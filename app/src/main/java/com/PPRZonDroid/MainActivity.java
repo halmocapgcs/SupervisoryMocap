@@ -589,7 +589,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
           @Override
           public void onMarkerDragStart(Marker marker) {
-              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_MOVE, -1);
               originalPosition = marker.getPosition();
               int index = mMarkerHead.indexOf(marker);
               pathPoints.set(index + 1, marker.getPosition());
@@ -625,7 +624,15 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
              }
                 //else statement ensures we do not send a paparazzi message for a waypoint that doesn't exist
               else{
-			    launch_altitude_dialog(marker, "OLD");
+                  logger.logWaypointEvent(
+                          AC_DATA.AircraftData[0],
+                          EventLogger.WAYPOINT_MOVE,
+                          -1,
+                          originalPosition,
+                          marker.getPosition(),
+                          marker.getSnippet(),
+                          null);
+                  launch_altitude_dialog(marker, "OLD");
               }
       }
     });
@@ -652,8 +659,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 .snippet(Float.toString(1.0f))
                 .icon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
                     "red", "?", AC_DATA.GraphicsScaleFactor))));
-            logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_CREATE, -1);
             launch_altitude_dialog(newMarker, "NEW");
+
 
             mMarkerHead.add(newMarker);
 			if((mrkIndex == 0)){
@@ -1572,7 +1579,14 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                         mMarkerHead.remove(index);
                         pathPoints.remove(index + 1);
                         adjust_marker_lines();
-                        logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_DELETE, -1);
+                        logger.logWaypointEvent(
+                                AC_DATA.AircraftData[0],
+                                EventLogger.WAYPOINT_DELETE,
+                                -1,
+                                rMarker.getPosition(),
+                                null,
+                                rMarker.getSnippet(),
+                                null);
                     }
                 })
                 .setNegativeButton("Cancel", null)
@@ -1648,7 +1662,24 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if(mFlag.equals("OLD")){
-                            logger.logEvent(AC_DATA.AircraftData[0], EventLogger.WAYPOINT_ALTITUDE_ADJUST, -1);
+                            logger.logWaypointEvent(
+                                    AC_DATA.AircraftData[0],
+                                    EventLogger.WAYPOINT_ALTITUDE_ADJUST,
+                                    -1,
+                                    altMarker.getPosition(),
+                                    altMarker.getPosition(),
+                                    altMarker.getSnippet(),
+                                    altVal.getText().toString());
+                        }else{
+                            logger.logWaypointEvent(
+                                    AC_DATA.AircraftData[0],
+                                    EventLogger.WAYPOINT_CREATE,
+                                    -1,
+                                    null,
+                                    altMarker.getPosition(),
+                                    null,
+                                    altVal.getText().toString());
+
                         }
                         altMarker.setSnippet(altVal.getText().toString());
                         lastAltitude = Double.parseDouble(altVal.getText().toString());
