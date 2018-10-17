@@ -64,7 +64,7 @@ public class EventLogger implements Serializable{
 
     protected void logEvent(
             Telemetry.AirCraft aircraft,
-            String event,
+            int event,
             float eventParameter) {
         try {
             writer.append(Long.toString(System.currentTimeMillis()/1000));
@@ -77,7 +77,7 @@ public class EventLogger implements Serializable{
             writer.append(",");
             writer.append(Double.toString(aircraft.Position.longitude));
             writer.append(",");
-            writer.append(event);
+            writer.append(Integer.toString(event));
             writer.append(",");
             writer.append(Float.toString(eventParameter));
             writer.append("\n");
