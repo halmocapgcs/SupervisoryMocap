@@ -133,6 +133,7 @@ public class Telemetry {
         try {
             socket.receive(packet);
             String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength());
+            Log.d("DroneLogging", String2parse);
             //!!TODO line below is for compatibility. Will be
             //String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength()-1);
             if ((String2parse != null) && (!String2parse.equals(String2parse_buf))) {
@@ -283,7 +284,7 @@ public class Telemetry {
 		  AircraftData[AcIndex].Speed = ParsedData[8].substring(0, (ParsedData[8].indexOf(".") + 2));
 		  AircraftData[AcIndex].AGL = ParsedData[12].substring(0, ParsedData[12].indexOf("."));
 
-          Double altVal = Double.parseDouble(AircraftData[AcIndex].RawAltitude) + 0.3;
+          Double altVal = Double.parseDouble(ParsedData[10]) + 0.3;
           AircraftData[AcIndex].RawAltitude = altVal.toString();
           AircraftData[AcIndex].Altitude = altVal.toString().substring(0, altVal.toString().indexOf(".") + 2) + " m";
 

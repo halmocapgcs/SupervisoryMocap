@@ -31,7 +31,7 @@ public class EventLogger implements Serializable{
     public static final int WAYPOINT_ALTITUDE_ADJUST = 11;
 
     private static final String SD_PATH = "/storage/79CA-1EE6/Android/data/com.PPRZonDroid/files/";
-
+    private static final LatLng LAB_ORIGIN = new LatLng(36.005417, -78.940984);
     private FileWriter writer;
 
     public EventLogger(String filename){
@@ -52,19 +52,19 @@ public class EventLogger implements Serializable{
 
     private void buildFileHeaders(){
         try {
-            writer.append("Current Time (s),");
+            writer.append("Current Time (ms),");
             writer.append("Flight Time (s),");
             writer.append("Altitude (m),");
             writer.append("X-Position (m),");
             writer.append("Y-Position (m),");
             writer.append("Event,");
             writer.append("Manual Command,");
-            writer.append("Waypoint Start X,");
-            writer.append("Waypoint Start Y,");
-            writer.append("Waypoint Start Altitude,");
-            writer.append("Waypoint End X,");
-            writer.append("Waypoint End Y,");
-            writer.append("Waypoint End Altitude\n");
+            writer.append("WP Start X,");
+            writer.append("WP Start Y,");
+            writer.append("WP Start Altitude,");
+            writer.append("WP End X,");
+            writer.append("WP End Y,");
+            writer.append("WP End Altitude\n");
 
         } catch (IOException e) {
             Log.d("DroneLogging", "Failed to initialize the headers");
@@ -83,7 +83,7 @@ public class EventLogger implements Serializable{
             writer.append("-,"); //waypoint start alt
             writer.append("-,"); //waypoint end x
             writer.append("-,"); //waypoint end y
-            writer.append("-,"); //waypoint end alt
+            writer.append("-\n"); //waypoint end alt
             writer.flush();
 
         } catch (IOException e) {
@@ -104,21 +104,21 @@ public class EventLogger implements Serializable{
             printRequiredInformation(aircraft, event, manualCommand);
 
             if(startPosition != null) {
-                writer.append(Double.toString(startPosition.latitude));
+                writer.append(Double.toString(latitude_to_relative_position(startPosition)));
                 writer.append(",");
-                writer.append(Double.toString(startPosition.longitude));
+                writer.append(Double.toString(longitude_to_relative_position(startPosition)));
                 writer.append(",");
             }else{
                 writer.append("-,");
                 writer.append("-,");
             }
-            writer.append(startAltitude != null ? startAltitude : "-,");
+            writer.append(startAltitude != null ? startAltitude : "-");
             writer.append(",");
 
             if(endPosition != null) {
-                writer.append(Double.toString(endPosition.latitude));
+                writer.append(Double.toString(latitude_to_relative_position(endPosition)));
                 writer.append(",");
-                writer.append(Double.toString(endPosition.longitude));
+                writer.append(Double.toString(longitude_to_relative_position(endPosition)));
                 writer.append(",");
             }else{
                 writer.append("-,");
@@ -146,20 +146,31 @@ public class EventLogger implements Serializable{
             writer.append(",");
             writer.append(aircraft.RawAltitude);
             writer.append(",");
-            writer.append(Double.toString(aircraft.Position.latitude));
+            writer.append(Double.toString(latitude_to_relative_position(aircraft.Position)));
             writer.append(",");
-            writer.append(Double.toString(aircraft.Position.longitude));
+            writer.append(Double.toString(longitude_to_relative_position(aircraft.Position)));
             writer.append(",");
             writer.append(Integer.toString(event));
             writer.append(",");
             writer.append(Float.toString(manualCommand));
-            writer.append("\n");
+            writer.append(",");
 
         } catch (IOException e) {
             Log.d("DroneLogging", "Failed to append a new line of data.");
             e.printStackTrace();
         }
     }
+
+    private double latitude_to_relative_position(LatLng latLng){
+        return (MainActivity.convert_to_lab(latLng).latitude -
+                MainActivity.convert_to_lab(LAB_ORIGIN).latitude)*35879.28814;
+    }
+
+    private double longitude_to_relative_position(LatLng latLng){
+        return (MainActivity.convert_to_lab(latLng).longitude -
+                MainActivity.convert_to_lab(LAB_ORIGIN).longitude)*29709.19639;
+    }
+
     protected void closeLogger(){
         try {
             writer.flush();

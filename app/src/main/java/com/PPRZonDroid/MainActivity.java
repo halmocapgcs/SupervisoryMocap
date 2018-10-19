@@ -641,7 +641,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         @Override
         public void onMapClick(LatLng latLng) {
             Point markerScreenPosition = mMap.getProjection().toScreenLocation(latLng);
-            Log.d("location", "x: " + markerScreenPosition.x + "     y: " + markerScreenPosition.y);
+            Log.d("location", "x: " + latLng.latitude + "     y: " + latLng.longitude);
         }
     });
 
@@ -1511,7 +1511,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 	//this method converts the google latitudes to the corresponding points on the transposed image
 	//use this method to draw the markers in the right spots
-	public LatLng convert_to_lab(LatLng position){
+	public static LatLng convert_to_lab(LatLng position){
 		double oldLat = position.latitude;
 		double oldLong = position.longitude;
 
@@ -1524,7 +1524,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 	//this method converts the fake latitudes back to the actual google values
 	//use this for any information that paparazzi needs about where to actually send the drone
-	public LatLng convert_to_google(LatLng position){
+	public static LatLng convert_to_google(LatLng position){
 		double oldLat = position.latitude;
 		double oldLong = position.longitude;
 
