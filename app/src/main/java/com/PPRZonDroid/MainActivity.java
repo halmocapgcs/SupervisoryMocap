@@ -199,7 +199,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	public boolean pathInitialized = false;
     public LatLng originalPosition;
     private int mapIndex = 0;
-    private int[] mapImages = {R.drawable.modulezone_supervisory, R.drawable.trainingroom, R.drawable.experimentzone};
+    private int[] mapImages = {
+            R.drawable.empty_room,
+            R.drawable.check_ride,
+            R.drawable.experiment,
+            R.drawable.check_ride_height,
+            R.drawable.experiment_height};
     private GroundOverlay trueMap;
 
   	//Establish static socket to be used across activities
@@ -360,7 +365,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         map_swap.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                if(++mapIndex > 2) mapIndex = 0;
+                if(++mapIndex >= mapImages.length) mapIndex = 0;
                 BitmapDescriptor newLabImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
                 trueMap.setImage(newLabImage);
                 return false;
@@ -579,7 +584,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
       trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
-              .position(labOrigin, (float) 77.15)   //note if you change size of map you need to redo this val too
+              .position(labOrigin, (float) 45)   //note if you change size of map you need to redo this val too
               .bearing(90.0f));
 
 
@@ -1769,24 +1774,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         Point currentPoint = mMap.getProjection().toScreenLocation(latLng);
         int x = currentPoint.x;
         int y = currentPoint.y;
-
-        //outermost limits
-        if(x<245 || x>1260 || y<140 || y>930) return true;
-
-        //bottom left top right cutouts
-        if((x<715 && y>720) || (x>838 && y<580)) return true;
-
-        //lowermost wall
-        if(x<725 && x>665 && y>535) return true;
-
-        //corner of dynamic room
-        if(x>655 && x<720 && y>345 && y< 390) return true;
-
-        //control box
-        if(x>370 && x<410 && y<170) return true;
-
-        //edge by the common room
-        if(x<265 && y>375) return true;
 
         return false;
     }
