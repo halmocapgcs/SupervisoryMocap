@@ -10,13 +10,12 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Serializable;
 
 /**
  * Created by bwelton on 9/28/18.
  */
 
-public class EventLogger implements Serializable{
+public class EventLogger {
     public static final int TAKEOFF = 0;
     public static final int LANDING = 1;
     public static final int EXECUTE = 2;

@@ -226,7 +226,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	}
 
   	private Thread mTCPthread;
-  	private EventLogger logger;
+  	static EventLogger logger;
 
   	/**
   	 * Setup TCP and UDP connections of Telemetry class
@@ -300,7 +300,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 						  String url = "file:///sdcard/DCIM/video.sdp";
 						  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
 						  inspect.putExtra("videoUrl", url);
-						  inspect.putExtra("EventLogger", logger);
 						  startActivityForResult(inspect, InspectionPosition);
 					  }
 				  }.start();
@@ -318,7 +317,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  logger.logEvent(AC_DATA.AircraftData[0], EventLogger.TAKEOFF, -1);
+			  if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.TAKEOFF, -1);
 			  set_selected_block(0,false);
 			  Button_Takeoff.setSelected(true);
 			  return false;
@@ -329,7 +328,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.EXECUTE, -1);
+              if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.EXECUTE, -1);
 			  Button_Execute.setSelected(true);
 			  set_selected_block(1,false);
 			  return false;
@@ -340,7 +339,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.PAUSE, -1);
+              if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.PAUSE, -1);
               Button_Pause.setSelected(true);
 			  set_selected_block(2, false);
 			  return false;
@@ -351,7 +350,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-              logger.logEvent(AC_DATA.AircraftData[0], EventLogger.LANDING, -1);
+              if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.LANDING, -1);
               set_selected_block(3,false);
 			  Button_LandHere.setSelected(true);
 			  return false;
