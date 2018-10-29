@@ -217,7 +217,6 @@ public class Telemetry {
           //Block changed
           AircraftData[AcIndex].SelectedBlock = BlockId;
 
-
           BlockChanged = true;
           ViewChanged = true;
           return;
