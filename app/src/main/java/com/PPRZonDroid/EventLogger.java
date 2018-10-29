@@ -29,7 +29,7 @@ public class EventLogger {
     public static final int WAYPOINT_MOVE = 10;
     public static final int WAYPOINT_ALTITUDE_ADJUST = 11;
 
-    private static final String SD_PATH = "/storage/79CA-1EE6/Android/data/com.PPRZonDroid/files/";
+    private static final String SD_PATH = "/storage/A9B1-0805/Android/data/com.PPRZonDroid/files/";
     private static final LatLng LAB_ORIGIN = new LatLng(36.005417, -78.940984);
     private FileWriter writer;
 

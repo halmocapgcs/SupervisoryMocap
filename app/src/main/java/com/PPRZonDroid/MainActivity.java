@@ -302,7 +302,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 					  @Override
 					  public void onFinish() {
-						  String url = "file:///sdcard/DCIM/video.sdp";
+						  String url = "file:///sdcard/DCIM/video1.sdp";
 						  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
 						  inspect.putExtra("videoUrl", url);
 						  startActivityForResult(inspect, InspectionPosition);
@@ -584,7 +584,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
       trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
-              .position(labOrigin, (float) 45)   //note if you change size of map you need to redo this val too
+              .position(labOrigin, (float) 46)   //note if you change size of map you need to redo this val too
               .bearing(90.0f));
 
 
@@ -645,7 +645,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         @Override
         public void onMapClick(LatLng latLng) {
             Point markerScreenPosition = mMap.getProjection().toScreenLocation(latLng);
-            Log.d("location", "x: " + latLng.latitude + "     y: " + latLng.longitude);
+            Log.d("location", "x: " + markerScreenPosition.x+ "     y: " + markerScreenPosition.y);
+            if(markerScreenPosition.x==1285 || markerScreenPosition.x == 1286 || markerScreenPosition.x == 1284){
+                Log.d("location", "x: " + latLng.latitude+ "     y: " + latLng.longitude + " " + markerScreenPosition.x);
+            }
         }
     });
 
@@ -1519,8 +1522,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		double oldLat = position.latitude;
 		double oldLong = position.longitude;
 
-		double newLat = 2.9375*oldLat - 69.76036344;
-		double newLong = 3*oldLong + 157.8820645;
+		double newLat = 5*oldLat - 144.021756;
+		double newLong = 5.35*oldLong+343.3933874;
 
 		LatLng newPosition = new LatLng(newLat, newLong);
 		return newPosition;
@@ -1532,8 +1535,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		double oldLat = position.latitude;
 		double oldLong = position.longitude;
 
-		double newLat = (oldLat + 69.76036344)/2.9375;
-		double newLong = (oldLong - 157.8820645)/3;
+		double newLat = (oldLat + 144.021756)/5;
+		double newLong = (oldLong - 343.3933874)/5.35;
 
 		LatLng newPosition = new LatLng(newLat, newLong);
 		return newPosition;
@@ -1725,6 +1728,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         groupSelections.add("Group_1");
         groupSelections.add("Group_2");
         groupSelections.add("Group_3");
+        groupSelections.add("Group_4");
 
         ArrayAdapter<String> groupDataAdapter =
                 new ArrayAdapter<>(
@@ -1775,7 +1779,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         int x = currentPoint.x;
         int y = currentPoint.y;
 
-        return false;
+        return x > 1500 || x < 422 || y < 167 || y >922;
     }
 
 }
