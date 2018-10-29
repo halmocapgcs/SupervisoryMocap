@@ -1,6 +1,5 @@
 package com.PPRZonDroid;
 
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 
@@ -9,15 +8,15 @@ import android.view.ViewGroup;
  */
 
 public class ThumbPad {
+	protected static final int RIGHT = 1;
+	protected static final int UP = 2;
+	protected static final int LEFT = 3;
+	protected static final int DOWN = 4;
 
 	public ViewGroup.LayoutParams params;
 	private ViewGroup mLayout;
 
-	float x, y, distance, angle;
-	int RIGHT = 1;
-	int UP = 2;
-	int LEFT = 3;
-	int DOWN = 4;
+	private float x, y, distance, angle;
 
 	public ThumbPad(ViewGroup layout){
 		mLayout = layout;

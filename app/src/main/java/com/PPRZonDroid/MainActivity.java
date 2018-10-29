@@ -92,11 +92,15 @@ import android.view.Menu;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.NumberPicker;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -120,9 +124,9 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 import static java.lang.Double.parseDouble;
-//import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 
 
@@ -142,6 +146,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	public static final String BLOCK_C_TIMEOUT = "block_change_timeout";
   	public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
   	public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
+
+  	private static final int MAX_USER_ID = 42;
 
 	public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   	boolean ShowOnlySelected = true;
@@ -193,7 +199,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	public boolean pathInitialized = false;
     public LatLng originalPosition;
     private int mapIndex = 0;
-    private int[] mapImages = {R.drawable.modulezone_supervisory, R.drawable.trainingroom, R.drawable.experimentzone};
+    private int[] mapImages = {
+            R.drawable.empty_room,
+            R.drawable.check_ride,
+            R.drawable.experiment,
+            R.drawable.check_ride_height,
+            R.drawable.experiment_height};
     private GroundOverlay trueMap;
 
   	//Establish static socket to be used across activities
@@ -220,6 +231,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	}
 
   	private Thread mTCPthread;
+  	static EventLogger logger;
 
   	/**
   	 * Setup TCP and UDP connections of Telemetry class
@@ -281,7 +293,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  public void onClick(View view) {
 			  if(!isClicked) {
 				  isClicked = true;
-				  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 9, true);
+                  logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_LAUNCH, -1);
+                  send_to_server("PPRZonDroid JUMP_TO_BLOCK " + AcId + " " + 9, true);
 				  new CountDownTimer(1000, 100) {
 					  @Override
 					  public void onTick(long l) {
@@ -289,7 +302,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 					  @Override
 					  public void onFinish() {
-						  String url = "file:///sdcard/DCIM/video.sdp";
+						  String url = "file:///sdcard/DCIM/video1.sdp";
 						  Intent inspect = new Intent(getApplicationContext(), InspectionMode.class);
 						  inspect.putExtra("videoUrl", url);
 						  startActivityForResult(inspect, InspectionPosition);
@@ -309,6 +322,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
+			  if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.TAKEOFF, -1);
 			  set_selected_block(0,false);
 			  Button_Takeoff.setSelected(true);
 			  return false;
@@ -319,6 +333,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
+              if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.EXECUTE, -1);
 			  Button_Execute.setSelected(true);
 			  set_selected_block(1,false);
 			  return false;
@@ -329,7 +344,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  Button_Pause.setSelected(true);
+              if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.PAUSE, -1);
+              Button_Pause.setSelected(true);
 			  set_selected_block(2, false);
 			  return false;
 		  }
@@ -339,7 +355,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 		  @Override
 		  public boolean onTouch(View v, MotionEvent event) {
 			  clear_buttons();
-			  set_selected_block(3,false);
+              if(event.getAction() == MotionEvent.ACTION_DOWN) logger.logEvent(AC_DATA.AircraftData[0], EventLogger.LANDING, -1);
+              set_selected_block(3,false);
 			  Button_LandHere.setSelected(true);
 			  return false;
 		  }
@@ -348,7 +365,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         map_swap.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                if(++mapIndex > 2) mapIndex = 0;
+                if(++mapIndex >= mapImages.length) mapIndex = 0;
                 BitmapDescriptor newLabImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
                 trueMap.setImage(newLabImage);
                 return false;
@@ -567,7 +584,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
       BitmapDescriptor labImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
       trueMap = mMap.addGroundOverlay(new GroundOverlayOptions()
               .image(labImage)
-              .position(labOrigin, (float) 77.15)   //note if you change size of map you need to redo this val too
+              .position(labOrigin, (float) 46)   //note if you change size of map you need to redo this val too
               .bearing(90.0f));
 
 
@@ -611,7 +628,15 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
              }
                 //else statement ensures we do not send a paparazzi message for a waypoint that doesn't exist
               else{
-			    launch_altitude_dialog(marker, "OLD");
+                  logger.logWaypointEvent(
+                          AC_DATA.AircraftData[0],
+                          EventLogger.WAYPOINT_MOVE,
+                          -1,
+                          originalPosition,
+                          marker.getPosition(),
+                          marker.getSnippet(),
+                          null);
+                  launch_altitude_dialog(marker, "OLD");
               }
       }
     });
@@ -620,7 +645,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         @Override
         public void onMapClick(LatLng latLng) {
             Point markerScreenPosition = mMap.getProjection().toScreenLocation(latLng);
-            Log.d("location", "x: " + markerScreenPosition.x + "     y: " + markerScreenPosition.y);
+            Log.d("location", "x: " + markerScreenPosition.x+ "     y: " + markerScreenPosition.y);
+            if(markerScreenPosition.x==1285 || markerScreenPosition.x == 1286 || markerScreenPosition.x == 1284){
+                Log.d("location", "x: " + latLng.latitude+ "     y: " + latLng.longitude + " " + markerScreenPosition.x);
+            }
         }
     });
 
@@ -639,6 +667,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 .icon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
                     "red", "?", AC_DATA.GraphicsScaleFactor))));
             launch_altitude_dialog(newMarker, "NEW");
+
 
             mMarkerHead.add(newMarker);
 			if((mrkIndex == 0)){
@@ -870,36 +899,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     AC_DATA.ViewChanged = false;
   }
 
-	//unused, would normally work in conjunction with flightplan waypoints being moved on google map
-//  private void waypoint_changed(String WpID, LatLng NewPosition, String DialogTitle) {
-//
-//    //Find the marker
-//
-//    int AcInd;
-//    int MarkerInd = 1;
-//    for (AcInd = 0; AcInd <= AC_DATA.IndexEnd; AcInd++) {     //Find waypoint which is changed!
-//
-//
-//      for (MarkerInd = 1; (MarkerInd < AC_DATA.AircraftData[AcInd].NumbOfWps - 1); MarkerInd++) {
-//
-//        if ((null == AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker))
-//          continue; //we dont have data for this wp yet
-//        //Log.d("PPRZ_info", "Marker drop!!  Searching for AC= " + AcInd + " wpind:" + MarkerInd + " mid: "+AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId());
-//        //Search the marker
-//
-//        if (AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpMarker.getId().equals(WpID)) {
-//          //Log.d("PPRZ_info", "Marker found AC= " + AcInd + " wpind:" + MarkerInd);
-//          NewPosition =  convert_to_google(NewPosition);
-//          AC_DATA.AircraftData[AcInd].AC_Markers[MarkerInd].WpPosition = NewPosition;
-//
-//          return;
-//        }
-//
-//      }
-//    }
-//
-//  }
-
   private boolean checkReady() {
     if (mMap == null) {
       Toast.makeText(this, R.string.map_not_ready, Toast.LENGTH_SHORT).show();
@@ -931,21 +930,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     //getMenuInflater().inflate(R.menu.main, menu);
     return true;
   }
-
-//  @Override
-//  public boolean onOptionsItemSelected(MenuItem item) {
-//    // Handle action bar item clicks here. The action bar will
-//    // automatically handle clicks on the Home/Up button, so long
-//    // as you specify a parent activity in AndroidManifest.xml.
-//    switch (item.getItemId()) {
-//      case R.id.action_settings:
-//
-//        Intent intent = new Intent(this, SettingsActivity.class);
-//        startActivity(intent);
-//        return true;
-//    }
-//    return super.onOptionsItemSelected(item);
-//  }
 
   @Override
   protected void onStop() {
@@ -987,6 +971,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        logger.closeLogger();
     }
 
   @Override
@@ -1034,6 +1019,8 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
     setup_telemetry_class();
     TelemetryAsyncTask = new ReadTelemetry();
     TelemetryAsyncTask.execute();
+
+    launch_file_dialog();
   }
 
   private ReadTelemetry TelemetryAsyncTask;
@@ -1528,12 +1515,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 	//this method converts the google latitudes to the corresponding points on the transposed image
 	//use this method to draw the markers in the right spots
-	public LatLng convert_to_lab(LatLng position){
+	public static LatLng convert_to_lab(LatLng position){
 		double oldLat = position.latitude;
 		double oldLong = position.longitude;
 
-		double newLat = 2.9375*oldLat - 69.76036344;
-		double newLong = 3*oldLong + 157.8820645;
+		double newLat = 5*oldLat - 144.021756;
+		double newLong = 5.35*oldLong+343.3933874;
 
 		LatLng newPosition = new LatLng(newLat, newLong);
 		return newPosition;
@@ -1541,12 +1528,12 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
 
 	//this method converts the fake latitudes back to the actual google values
 	//use this for any information that paparazzi needs about where to actually send the drone
-	public LatLng convert_to_google(LatLng position){
+	public static LatLng convert_to_google(LatLng position){
 		double oldLat = position.latitude;
 		double oldLong = position.longitude;
 
-		double newLat = (oldLat + 69.76036344)/2.9375;
-		double newLong = (oldLong - 157.8820645)/3;
+		double newLat = (oldLat + 144.021756)/5;
+		double newLong = (oldLong - 343.3933874)/5.35;
 
 		LatLng newPosition = new LatLng(newLat, newLong);
 		return newPosition;
@@ -1596,6 +1583,14 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                         mMarkerHead.remove(index);
                         pathPoints.remove(index + 1);
                         adjust_marker_lines();
+                        logger.logWaypointEvent(
+                                AC_DATA.AircraftData[0],
+                                EventLogger.WAYPOINT_DELETE,
+                                -1,
+                                rMarker.getPosition(),
+                                null,
+                                rMarker.getSnippet(),
+                                null);
                     }
                 })
                 .setNegativeButton("Cancel", null)
@@ -1670,6 +1665,26 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                 .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        if(mFlag.equals("OLD")){
+                            logger.logWaypointEvent(
+                                    AC_DATA.AircraftData[0],
+                                    EventLogger.WAYPOINT_ALTITUDE_ADJUST,
+                                    -1,
+                                    altMarker.getPosition(),
+                                    altMarker.getPosition(),
+                                    altMarker.getSnippet(),
+                                    altVal.getText().toString());
+                        }else{
+                            logger.logWaypointEvent(
+                                    AC_DATA.AircraftData[0],
+                                    EventLogger.WAYPOINT_CREATE,
+                                    -1,
+                                    null,
+                                    altMarker.getPosition(),
+                                    null,
+                                    altVal.getText().toString());
+
+                        }
                         altMarker.setSnippet(altVal.getText().toString());
                         lastAltitude = Double.parseDouble(altVal.getText().toString());
                         altMarker.setIcon(BitmapDescriptorFactory.fromBitmap(AC_DATA.muiGraphics.create_marker_icon(
@@ -1684,30 +1699,84 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         altDialog.show();
     }
 
+    private void launch_file_dialog(){
+        AlertDialog.Builder fileDialog = new AlertDialog.Builder(MainActivity.this);
+        LinearLayout dialogLayout = new LinearLayout(this);
+        dialogLayout.setOrientation(LinearLayout.HORIZONTAL);
+        dialogLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        // Create a drop down menu of all possible user ids
+        final Spinner userId = new Spinner(this);
+        final List<String> userIdSelections = new ArrayList<>();
+        for(int i = 1; i<MAX_USER_ID; i++){
+            userIdSelections.add(Integer.toString(i));
+        }
+
+        ArrayAdapter<String> userIdDataAdapter =
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        userIdSelections);
+        userId.setAdapter(userIdDataAdapter);
+
+        // Create a drop down menu of the experimental groups
+        final Spinner experimentalGroups = new Spinner(this);
+        final List<String> groupSelections = new ArrayList<>();
+        groupSelections.add("Group_1");
+        groupSelections.add("Group_2");
+        groupSelections.add("Group_3");
+        groupSelections.add("Group_4");
+
+        ArrayAdapter<String> groupDataAdapter =
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        groupSelections);
+        experimentalGroups.setAdapter(groupDataAdapter);
+
+        // Create a drop down menu of the modules
+        final Spinner modules = new Spinner(this);
+        final List<String> moduleSelections = new ArrayList<>();
+        moduleSelections.add("Module_3");
+        moduleSelections.add("Module_4");
+        moduleSelections.add("Module_5");
+        moduleSelections.add("Module_6");
+        moduleSelections.add("Checkride");
+        moduleSelections.add("Experiment");
+
+        ArrayAdapter<String> moduleDataAdapter =
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        moduleSelections);
+        modules.setAdapter(moduleDataAdapter);
+
+        dialogLayout.addView(userId);
+        dialogLayout.addView(experimentalGroups);
+        dialogLayout.addView(modules);
+
+        fileDialog.setTitle("Choose Experiment Parameters")
+                .setMessage("Choose the user ID, the module being tested, and the experimental group.")
+                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        logger = new EventLogger(
+                                userId.getSelectedItem() + "_" +
+                                        experimentalGroups.getSelectedItem() + "_" +
+                                        modules.getSelectedItem() + ".csv");
+                    }
+                }).create();
+        fileDialog.setView(dialogLayout);
+        fileDialog.show();
+
+    }
+
     public boolean outsideBounds(LatLng latLng){
         Point currentPoint = mMap.getProjection().toScreenLocation(latLng);
         int x = currentPoint.x;
         int y = currentPoint.y;
 
-        //outermost limits
-        if(x<245 || x>1260 || y<140 || y>930) return true;
-
-        //bottom left top right cutouts
-        if((x<715 && y>720) || (x>838 && y<580)) return true;
-
-        //lowermost wall
-        if(x<725 && x>665 && y>535) return true;
-
-        //corner of dynamic room
-        if(x>655 && x<720 && y>345 && y< 390) return true;
-
-        //control box
-        if(x>370 && x<410 && y<170) return true;
-
-        //edge by the common room
-        if(x<265 && y>375) return true;
-
-        return false;
+        return x > 1500 || x < 422 || y < 167 || y >922;
     }
 
 }

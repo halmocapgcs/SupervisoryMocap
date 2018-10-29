@@ -133,6 +133,7 @@ public class Telemetry {
         try {
             socket.receive(packet);
             String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength());
+            Log.d("DroneLogging", String2parse);
             //!!TODO line below is for compatibility. Will be
             //String2parse=  new String(packet.getData(), packet.getOffset(), packet.getLength()-1);
             if ((String2parse != null) && (!String2parse.equals(String2parse_buf))) {
@@ -176,6 +177,7 @@ public class Telemetry {
         AircraftData[AcIndex].ApMode = ParsedData[3];
         AircraftData[AcIndex].GpsMode = ParsedData[7];
         AircraftData[AcIndex].StateFilterMode = ParsedData[10];
+        AircraftData[AcIndex].RawFlightTime = ParsedData[9];
         Long FlightTime = Long.parseLong(ParsedData[9]);
         Long Hours, Minutes;
 
@@ -279,12 +281,11 @@ public class Telemetry {
 		  AircraftData[AcIndex].Heading = ParsedData[5];
 		  AircraftData[AcIndex].Position = new LatLng(Double.parseDouble(ParsedData[6]), Double.parseDouble(ParsedData[7]));
 		  AircraftData[AcIndex].Speed = ParsedData[8].substring(0, (ParsedData[8].indexOf(".") + 2));
-		  AircraftData[AcIndex].RawAltitude = ParsedData[10];
 		  AircraftData[AcIndex].AGL = ParsedData[12].substring(0, ParsedData[12].indexOf("."));
 
-          Double altVal = Double.parseDouble(AircraftData[AcIndex].RawAltitude) + 0.3;
-          AircraftData[AcIndex].Altitude = altVal.toString();
-          AircraftData[AcIndex].Altitude = AircraftData[AcIndex].Altitude.substring(0, AircraftData[AcIndex].Altitude.indexOf(".") + 2) + " m";
+          Double altVal = Double.parseDouble(ParsedData[10]) + 0.3;
+          AircraftData[AcIndex].RawAltitude = altVal.toString();
+          AircraftData[AcIndex].Altitude = altVal.toString().substring(0, altVal.toString().indexOf(".") + 2) + " m";
 
         String BufAirspeed= ParsedData[15].substring(0, ParsedData[15].indexOf(".") + 1);
 
@@ -699,6 +700,7 @@ public class Telemetry {
     String AirSpeed = "N/A";
     boolean ApStatusChanged = false;
     String FlightTime;
+    String RawFlightTime;
     String ApMode;
     String GpsMode;
     String StateFilterMode;

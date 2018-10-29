@@ -29,8 +29,6 @@
 
 package com.PPRZonDroid;
 
-import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -38,42 +36,24 @@ import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.Display;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Color;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.os.CountDownTimer;
-import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
-import android.view.Display;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.FrameLayout;
-import android.view.View;
-import android.widget.Button;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.videolan.libvlc.IVideoPlayer;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.LibVlcException;
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -125,11 +105,6 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 	public int mode = 2;
 	public int percent = 100;
 	public int AcId = 31;
-
-	int RIGHT = 1;
-	int UP = 2;
-	int LEFT = 3;
-	int DOWN = 4;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -251,22 +226,24 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				AC_DATA.inspecting = true;
-				if(event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE){
+				if(event.getAction() == MotionEvent.ACTION_DOWN){
+					MainActivity.logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_START, leftPad.getRegion(event));
 					mode = 1;
-					if(leftPad.getRegion(event) == RIGHT){
+					if(leftPad.getRegion(event) == ThumbPad.RIGHT){
 						yaw = 10;
 					}
-					else if(leftPad.getRegion(event) == LEFT){
+					else if(leftPad.getRegion(event) == ThumbPad.LEFT){
 						yaw = -10;
 					}
-					else if(leftPad.getRegion(event) == UP && belowAltitude()){
+					else if(leftPad.getRegion(event) == ThumbPad.UP && belowAltitude()){
 						throttle = 83;
 					}
-					else if(leftPad.getRegion(event) == DOWN){
+					else if(leftPad.getRegion(event) == ThumbPad.DOWN){
 						throttle = 42;
 					}
 				}
 				else if(event.getAction()== MotionEvent.ACTION_UP) {
+					MainActivity.logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_END, leftPad.getRegion(event));
 					yaw = 0;
 					throttle = 63;
 					new CountDownTimer(1000, 100) {
@@ -292,21 +269,23 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 			public boolean onTouch(View v, MotionEvent event) {
 				AC_DATA.inspecting = true;
 				if(event.getAction() == MotionEvent.ACTION_DOWN){
+					MainActivity.logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_START, rightPad.getRegion(event));
 					mode = 1;
-					if(rightPad.getRegion(event) == RIGHT){
+					if(rightPad.getRegion(event) == ThumbPad.RIGHT){
 						roll = 15;
 					}
-					else if(rightPad.getRegion(event) == LEFT){
+					else if(rightPad.getRegion(event) == ThumbPad.LEFT){
 						roll = -15;
 					}
-					else if(rightPad.getRegion(event) == UP){
+					else if(rightPad.getRegion(event) == ThumbPad.UP){
 						pitch = -15;
 					}
-					else if(rightPad.getRegion(event) == DOWN){
+					else if(rightPad.getRegion(event) == ThumbPad.DOWN){
 						pitch = 15;
 					}
 				}
 				else if(event.getAction()== MotionEvent.ACTION_UP){
+					MainActivity.logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_COMMAND_END, rightPad.getRegion(event));
 					pitch = 0;
 					roll = 0;
 					new CountDownTimer(1000, 100) {
@@ -352,6 +331,7 @@ public class InspectionMode extends Activity implements IVideoPlayer {
 
 								@Override
 								public void onFinish() {
+									MainActivity.logger.logEvent(AC_DATA.AircraftData[0], EventLogger.INSPECTION_CLOSE, -1);
 									AC_DATA.inspecting = false;
 									AC_DATA.mTcpClient.sendMessage("removeme");
 									//TelemetryAsyncTask.isCancelled();
