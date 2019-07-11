@@ -809,7 +809,6 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   //Refresh markers, the updates here to the ac icon are used but everything else remains from if
 	//we ever wanted to reimplement the ability to move markers loaded from flightplan
   private void refresh_markers() {
-
     int i;
 
     for (i = 0; i <= AC_DATA.IndexEnd; i++) {
@@ -1423,12 +1422,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         if (AC_DATA.BlockChanged) {
           //Block changed for selected aircraft
           if (DEBUG) Log.d("PPRZ_info", "Block Changed for selected AC.");
-
           set_selected_block((AC_DATA.AircraftData[AC_DATA.SelAcInd].SelectedBlock-1),true);
           AC_DATA.BlockChanged = false;
 
         }
-
 
         if (AC_DATA.NewAcAdded) {
           //new ac addedBattery value for an ac is changed
