@@ -147,7 +147,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
   	public static final String DISABLE_SCREEN_DIM = "disable_screen_dim";
   	public static final String DISPLAY_FLIGHT_INFO = "show_flight_info";
 
-  	private static final int MAX_USER_ID = 42;
+  	private static final int MAX_USER_ID = 70;
 
 	public Telemetry AC_DATA;                       //Class to hold&proces AC Telemetry Data
   	boolean ShowOnlySelected = true;
@@ -448,7 +448,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
             }
 
             //adjust path lines if pause is triggered
-            else if (BlocId == 8){
+            else if (BlocId == 8 && pathPoints.size()>1){
                 pathPoints.removeFirst();
                 pathPoints.addFirst(AC_DATA.AircraftData[0].AC_Carrot_Marker.getPosition());
                 adjust_marker_lines();
@@ -645,10 +645,7 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         @Override
         public void onMapClick(LatLng latLng) {
             Point markerScreenPosition = mMap.getProjection().toScreenLocation(latLng);
-            Log.d("location", "x: " + markerScreenPosition.x+ "     y: " + markerScreenPosition.y);
-            if(markerScreenPosition.x==1285 || markerScreenPosition.x == 1286 || markerScreenPosition.x == 1284){
-                Log.d("location", "x: " + latLng.latitude+ "     y: " + latLng.longitude + " " + markerScreenPosition.x);
-            }
+            Log.d("location", "x: " + latLng.latitude +  "     y: " + latLng.longitude);
         }
     });
 
@@ -1328,6 +1325,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
           publishProgress("ee");
           AC_DATA.ViewChanged = false;
         }
+
+        if(System.currentTimeMillis() % 10 == 0 && logger != null){
+            logger.logEvent(AC_DATA.AircraftData[0], EventLogger.NO_EVENT, -1);
+        }
       }
 
       if (DEBUG) Log.d("PPRZ_info", "Stopping AsyncTask ..");
@@ -1745,7 +1746,10 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         moduleSelections.add("Module_5");
         moduleSelections.add("Module_6");
         moduleSelections.add("Checkride");
-        moduleSelections.add("Experiment");
+        moduleSelections.add("Experiment_1");
+        moduleSelections.add("Experiment_2");
+        moduleSelections.add("Experiment_3");
+
 
         ArrayAdapter<String> moduleDataAdapter =
                 new ArrayAdapter<>(
@@ -1767,6 +1771,17 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
                                 userId.getSelectedItem() + "_" +
                                         experimentalGroups.getSelectedItem() + "_" +
                                         modules.getSelectedItem() + ".csv");
+                        if(modules.getSelectedItem().equals("Checkride")){
+                            mapIndex = 1;
+                            BitmapDescriptor newLabImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
+                            trueMap.setImage(newLabImage);
+                        }else if(modules.getSelectedItem().equals("Experiment_1")
+                                || modules.getSelectedItem().equals("Experiment_2")
+                                || modules.getSelectedItem().equals("Experiment_3")){
+                            mapIndex = 2;
+                            BitmapDescriptor newLabImage = BitmapDescriptorFactory.fromResource(mapImages[mapIndex]);
+                            trueMap.setImage(newLabImage);
+                        }
                     }
                 }).create();
         fileDialog.setView(dialogLayout);
